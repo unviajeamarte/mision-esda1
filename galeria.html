@@ -1,4 +1,4 @@
-
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -201,7 +201,7 @@
         .edition-tag {
             font-family: 'Montserrat', sans-serif;
             font-size: 0.8rem;
-            color: var(--color-text-secondary);
+            color: var(--text-secondary);
             letter-spacing: 2px;
             text-transform: uppercase;
             font-weight: 500;
@@ -780,26 +780,6 @@
     <!-- Canvas de soporte para el fondo de gas dinámico -->
     <canvas id="gas-background"></canvas>
 
-    <!-- Botón de Conmutación de Telemetría (Día/Noche) -->
-    <button class="theme-toggle" id="theme-toggle" title="Cambiar telemetría (Día/Noche)">
-        <!-- Icono de Sol / Radar Solar -->
-        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="5"/>
-            <line x1="12" y1="1" x2="12" y2="3"/>
-            <line x1="12" y1="21" x2="12" y2="23"/>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-            <line x1="1" y1="12" x2="3" y2="12"/>
-            <line x1="21" y1="12" x2="23" y2="12"/>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-        </svg>
-        <!-- Icono de Luna -->
-        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-        </svg>
-    </button>
-
     <!-- Cabecera HUD -->
     <header>
         <!-- Logotipo ESDA en la parte superior izquierda -->
@@ -808,6 +788,26 @@
                 <img src="https://esda.es/wp-content/uploads/2023/03/ESDA-logo-horizontal.svg" alt="ESDA Logo" class="logo-esda" onerror="this.onerror=null; this.src='https://esda.es/images/logo.png';">
             </a>
         </div>
+
+        <!-- Botón de Conmutación de Telemetría (Día/Noche) alineado simétricamente con el logo -->
+        <button class="theme-toggle" id="theme-toggle" title="Cambiar telemetría (Día/Noche)">
+            <!-- Icono de Sol / Radar Solar -->
+            <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"/>
+                <line x1="12" y1="1" x2="12" y2="3"/>
+                <line x1="12" y1="21" x2="12" y2="23"/>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                <line x1="1" y1="12" x2="3" y2="12"/>
+                <line x1="21" y1="12" x2="23" y2="12"/>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+            <!-- Icono de Luna -->
+            <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+        </button>
 
         <p class="hud-subtitle">Misiones de Reconocimiento</p>
         <h1>Paisajes marcianos</h1>
