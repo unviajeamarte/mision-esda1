@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Misión Marte - Galería de Proyectos</title>
-    <!-- Importamos exactamente las dos fuentes elegantes solicitadas de Google Fonts -->
+    <title>Misión Marte - Galerí­a de Proyectos</title>
+    <!-- Importamos exactamente las dos fuentes elegantes de Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -268,6 +268,9 @@
             width: 100%;
             padding-top: 56.25%; /* Relación de aspecto 16:9 */
             background-color: #0b0507;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             border-radius: 6px;
             overflow: hidden;
             margin-bottom: 20px;
@@ -279,87 +282,40 @@
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
 
-        /* Capa 1: El fondo de calibración HUD que se revela si el thumbnail es negro */
-        .hud-blueprint-fallback {
+        /* Suave zoom out e iluminación de la miniatura al hacer hover */
+        .video-box::before {
+            content: '';
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 0;
-            background: radial-gradient(circle at center, #1a080a 0%, #060203 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            pointer-events: none;
-        }
-
-        .hud-scanning-line {
-            position: absolute;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--color-mars), transparent);
-            top: 0;
-            animation: scanLine 4s infinite linear;
-            opacity: 0.25;
-        }
-
-        @keyframes scanLine {
-            0% { top: 0%; }
-            100% { top: 100%; }
-        }
-
-        .hud-radar-svg {
-            position: absolute;
-            width: 45%;
-            height: 45%;
-            animation: rotateRadar 20s infinite linear;
-            opacity: 0.4;
-            filter: drop-shadow(0 0 4px var(--color-mars-glow));
-        }
-
-        @keyframes rotateRadar {
-            100% { transform: rotate(360deg); }
-        }
-
-        .hud-radar-text {
-            position: absolute;
-            bottom: 15px;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 8px;
-            color: rgba(255, 85, 51, 0.5);
-            letter-spacing: 2px;
-            font-weight: 700;
-        }
-
-        /* Capa 2: Miniatura cargada de Google Drive */
-        .video-thumbnail {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            background: inherit;
             background-size: cover;
             background-position: center;
-            background-repeat: no-repeat;
-            z-index: 1;
-            transition: transform 0.5s ease, opacity 0.3s ease;
-            /* CLAVE: Mezcla de color para que los pixeles negros se vuelvan totalmente transparentes */
-            mix-blend-mode: screen; 
-            opacity: 0.85;
+            transition: transform 0.5s ease, filter 0.3s ease;
+            z-index: 0;
         }
 
-        /* Capa 3: Iframe dinámico que se cargará solo en hover */
+        .video-box:hover::before {
+            transform: scale(1.06);
+            filter: brightness(1.1);
+        }
+
+        /* Iframe de previsualización (hover) escalado asimétricamente para recortar los elementos nativos de Google Drive */
+        /* CLAVE: Usamos top: -18.5% para desplazar y devorar completamente la barra superior negra. */
+        /* Hacemos left: -17.5% y width: 135% para centrar y sacar de plano los bordes blanquecinos laterales. */
+        /* Al usar height: 135% el final del reproductor y la seekbar blanca de reproducción quedan perfectamente ocultos abajo. */
         .hover-iframe {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: -18.5%;
+            left: -17.5%;
+            width: 135%;
+            height: 135%;
             border: 0;
+            outline: none;
             z-index: 5;
-            pointer-events: none; /* Permite clickar para abrir modal */
+            pointer-events: none; /* Deja pasar los clics para poder abrir el modal */
             opacity: 0;
             transition: opacity 0.3s ease;
         }
@@ -398,6 +354,7 @@
             align-items: center;
             justify-content: center;
             pointer-events: none;
+            transition: opacity 0.3s ease;
         }
 
         .hud-telemetry-decor::before {
@@ -685,7 +642,7 @@
 </head>
 <body>
 
-    <!-- Canvas de soporte para el fondo de gas dinámico (tormenta atmosférica) -->
+    <!-- Canvas de soporte para el fondo de gas dinámico -->
     <canvas id="gas-background"></canvas>
 
     <!-- Cabecera HUD -->
@@ -702,7 +659,7 @@
         <div class="hud-line"></div>
         <p class="edition-tag"> 2º de Diseño Gráfico | 25-26</p>
         
-        <p class="hud-description">Desde la asignatura de Medios Informáticos II, inspirados en el concepto del DiseñaFest’26, se propone a los alumnos imaginar una escena en Marte. Con total libertad creativa, en cuanto a su visión y estética, y después de todo el desarrollo del proyecto (ADD) en Blender, diseñaron un breve teaser promocional del Festival. A continuación una muestra. </p>
+        <p class="hud-description">Desde la asignatura de Medios Informáticos II, e inspirados en el concepto del DiseñaFest’26, se propone a los alumnos imaginar una escena en Marte. Con total libertad creativa, en cuanto a su visión y estética, y después de todo el desarrollo del proyecto (ADD) en Blender, diseñaron un breve teaser promocional del Festival. A continuación una muestra. </p>
 
         <!-- Retorno al Index 3D -->
         <a href="index.html" class="btn-return" id="btn-back" title="Volver a la Nave / Landing">
@@ -745,31 +702,31 @@
 
     <!-- SCRIPT DE EFECTOS VISUALES Y SONOROS (WEB AUDIO API) -->
     <script>
-        // --- 1. BANCO DE DATOS DE LOS 30 PROYECTOS CON TU NUEVO ID EN EL PROYECTO 1 ---
+        // --- 1. BANCO DE DATOS DE LOS 24 PROYECTOS ---
         const proyectos = [
             { id: 1, student: "Alejandro Bellosta", title: "Sonda Robotizada de Superficie", desc: "Modelado industrial (Hard-Surface) y ensamblado mecánico de un vehículo robotizado autónomo de exploración. Animación por armadura (rigging) para el comportamiento de las orugas articuladas.", class: "2º DG", group: "Grupo B", videoId: "1oi6maskOayEdoypr17dYPJaWJ242s_3R" },
-            { id: 2, student: "Ana María Cojocaru", title: "Invernadero Hidropónico Autosuficiente", desc: "Propuesta arquitectónica de domos geodésicos translúcidos para el cultivo y soporte vital de la primera colonia. Destaca por el tratamiento de sombreadores y materiales de cristal orgánico.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
-            { id: 3, student: "Aitana García", title: "Módulo de Aterrizaje Atmosférico", desc: "Reconstrucción tridimensional de un transbordador de descenso tripulado. Se ha desarrollado una física de partículas para simular el fuego de propulsión de los retrocohetes térmicos.", class: "2º DG", group: "Grupo B", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
-            { id: 4, student: "Aldara Esteban", title: "Base de Telecomunicaciones de Órbita Alta", desc: "Diseño de una estación de telecomunicaciones en sintonía orbital. Animación cinemática del despliegue progresivo de las antenas parabólicas y paneles solares procedurales.", class: "2º DG", group: "Grupo B", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 2, student: "Ana Marí­a Cojocaru", title: "Invernadero Hidropónico Autosuficiente", desc: "Propuesta arquitectónica de domos geodésicos translúcidos para el cultivo y soporte vital de la primera colonia. Destaca por el treatment de sombreadores y materiales de cristal orgánico.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 3, student: "Aitana Garcí­a", title: "Módulo de Aterrizaje Atmosférico", desc: "Reconstrucción tridimensional de un transbordador de descenso tripulado. Se ha desarrollado una fí­sica de partí­culas para simular el fuego de propulsión de los retrocohetes térmicos.", class: "2º DG", group: "Grupo B", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 4, student: "Aldara Esteban", title: "Base de Telecomunicaciones de Órbita Alta", desc: "Diseño de una estación de telecomunicaciones en sintoní­a orbital. Animación cinemática del despliegue progresivo de las antenas parabólicas y paneles solares procedurales.", class: "2º DG", group: "Grupo B", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
             { id: 5, student: "Amina Talby", title: "Satélite de Mapeo Geográfico", desc: "Sonda cartográfica de órbita polar. Rigging automatizado de paneles fotovoltaicos y antenas parabólicas con texturas mecánicas de Blender Cycles.", class: "2º DG", group: "Grupo B", videoId: "16FIpYnvmHBSvhe1e5_KN3TMNuX5pxkDO" },
-            { id: 6, student: "Aurora Lahuerta", title: "Rumbo al DF, diseñadores explorando", desc: "La idea central se articula en torno a una revelación escénica: una cascada  de lava que actúa como uno de los elementos principales. A medida que la cámara avanza, se empieza a desvelar un  entorno onírico habitado por elementos inusuales, culminando con la aparición de las iniciales del Diseña Fest (DF).", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
-            { id: 7, student: "Carla Loza", title: "Rover de Carga Pesada", desc: "Diseño 3D de un camión articulado de minería con suspensión hidráulica independiente y neumáticos de aleación deformable modelados proceduralmente.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
-            { id: 8, student: "Elisa Burillo", title: "Dron de Reconocimiento 'Aero'", desc: "Vehículo aéreo no tripulado cuatrirrotor de despegue vertical adaptado a la baja densidad aérea. Modelado en curvas bezier complejas.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 6, student: "Aurora Lahuerta", title: "Rumbo al DF, diseñadores explorando", desc: "La idea central se articula en torno a una revelación escénica: una cascada de lava que actúa como uno de los elementos principales. A medida que la cámara avanza, se empieza a desvelar un entorno oní­rico habitado por elementos inusuales, culminando con la aparición de las iniciales del Diseña Fest (DF).", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 7, student: "Carla Loza", title: "Rover de Carga Pesada", desc: "Diseño 3D de un camión articulado de minerí­a con suspensión hidráulica independiente y neumáticos de aleación deformable modelados proceduralmente.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 8, student: "Elisa Burillo", title: "Dron de Reconocimiento 'Aero'", desc: "Vehí­culo aéreo no tripulado cuatrirrotor de despegue vertical adaptado a la baja densidad aérea. Modelado en curvas bezier complejas.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
             { id: 9, student: "Erika Dolz", title: "Planta de Tratamiento Hidrológico", desc: "Instalación encargada de licuar el hielo subterráneo marciano. Texturas de agua procedurales mediante nodos y materiales volumétricos de cristal.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
-            { id: 10, student: "Eva Ayuda", title: "Lo inerte despierta", desc: "Estación rodante equipada con instrumental analítico de precisión. Animación de brazos robóticos y sensores cinemáticos integrados.", class: "2º DG", group: "Grupo C", videoId: "1mt5njXB45PksMg3NdHE4eEIJri-VHEDb" },
-            { id: 11, student: "Jorge Vaquerizo", title: "Laboratorio Científico Móvil", desc: "Estación rodante equipada con instrumental analítico de precisión. Animación de brazos robóticos y sensores cinemáticos integrados.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
-            { id: 12, student: "Izarbe Pescador", title: "Domo de Almacenamiento Modular", desc: "Módulos de logística y carga presurizados de acoplamiento automático. Iluminación nocturna sutil de cabina con sombreadores de emisión.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
-            { id: 13, student: "Lara Benítez", title: "Cohete de Retorno Orbital", desc: "Lanzador de dos etapas diseñado para reincorporarse con el transbordador nodriza. Dinámicas de humo volumétrico mediante sombreadores Pyro de Blender.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
-            { id: 14, student: "Leyre Flores", title: "El diseño de un nuevo mundo", desc: "Marte como un nuevo mundo que ya ha empezado a ser habitado, quería representar un espacio algo tenebroso, con formas exóticas que transmitieran la sensación de estar en un territorio desconocido. Sin embargo, el recorrido, el pasadizo y el altar funcionan como señales de presencia humana, como si los diseñadores ya hubieran comenzado a construir y dar sentido a ese nuevo planeta. Por eso el texto DiseñaFest aparece elevado sobre un altar, en un lugar importante y de valor, simbolizando el papel del diseño en la creación de este nuevo mundo.", class: "2º DG", group: "Grupo A", videoId: "1Ib6MWlcpqi7Y4KBYUEd45D94UVtMAzDk" },
+            { id: 10, student: "Eva Ayuda", title: "Lo inerte despierta", desc: "Estación rodante equipada con instrumental analí­tico de precisión. Animación de brazos robóticos y sensores cinemáticos integrados.", class: "2º DG", group: "Grupo C", videoId: "1mt5njXB45PksMg3NdHE4eEIJri-VHEDb" },
+            { id: 11, student: "Jorge Vaquerizo", title: "Laboratorio Cientí­fico Móvil", desc: "Estación rodante equipada con instrumental analí­tico de precisión. Animación de brazos robóticos y sensores cinemáticos integrados.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 12, student: "Izarbe Pescador", title: "Domo de Almacenamiento Modular", desc: "Módulos de logí­stica y carga presurizados de acoplamiento automático. Iluminación nocturna sutil de cabina con sombreadores de emisión.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 13, student: "Lara Bení­tez", title: "Cohete de Retorno Orbital", desc: "Lanzador de dos etapas diseñado para reincorporarse con el transbordador nodriza. Dinámicas de humo volumétrico mediante sombreadores Pyro de Blender.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 14, student: "Leyre Flores", title: "El diseño de un nuevo mundo", desc: "Marte como un nuevo mundo que ya ha empezado a ser habitado, querí­a representar un espacio algo tenebroso, con formas exóticas que transmitieran la sensación de estar en un territorio desconocido. Sin embargo, el recorrido, el pasadizo y el altar funcionan como señales de presencia humana, como si los diseñadores ya hubieran comenzado a construir y dar sentido a ese nuevo planeta. Por eso el texto DiseñaFest aparece elevado sobre un altar, en un lugar importante y de valor, simbolizando el papel del diseño en la creación de este nuevo mundo.", class: "2º DG", group: "Grupo A", videoId: "1Ib6MWlcpqi7Y4KBYUEd45D94UVtMAzDk" },
             { id: 15, student: "Marina Buil", title: "Generador de Campo Magnético", desc: "Estructura de bobinas superconductoras gigantes para restaurar la magnetosfera marciana. Animación de destellos de plasma por composición.", class: "2º DG", group: "Grupo B", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
-            { id: 16, student: "Michelle Vela", title: "El recorrido del hielo en Marte", desc: "Este proyecto ha buscado crear un entorno que si bien está inspirado en el planeta rojo, plantea un escenario diferente al que solemos imaginarnos. Con el pretexto de que se han encontrado indicios de la existencia de agua helada bajo el suelo de Marte, el eje de la animación se centra en mostrar una versión de esta hipótesis, claramente inspirada e influenciada por la ciencia ficción. Por ello, lo que observamos, aparte de especies de plantas alienígenas y formaciones rocosas de formas extrañas, es un gran río de hielo. Este no sigue las leyes físicas o químicas de nuestro planeta, y acaba formando esferas que se elevan hacia el cielo y desembocan en un gran lago. ", class: "2º DG", group: "Grupo C", videoId: "1oi6maskOayEdoypr17dYPJaWJ242s_3R" },
+            { id: 16, student: "Michelle Vela", title: "El recorrido del hielo en Marte", desc: "Este proyecto ha buscado crear un entorno que si bien está inspirado en el planeta rojo, plantea un escenario diferente al que solemos imaginarnos. Con el pretexto de que se han encontrado indicios de la existencia de agua helada bajo el suelo de Marte, el eje de la animación se centra en mostrar una version de esta hipótesis, claramente inspirada e influenciada por la ciencia ficción. Por ello, lo que observamos, aparte de especies de plantas aliení­genas y formaciones rocosas de formas extrañas, es un gran rí­o de hielo. Este no sigue las leyes fí­sicas o quí­micas de nuestro planeta, y acaba formando esferas que se elevan hacia el cielo y desembocan en un gran lago. ", class: "2º DG", group: "Grupo C", videoId: "1oi6maskOayEdoypr17dYPJaWJ242s_3R" },
             { id: 17, student: "Miriam Serrano", title: "Extractor de Mineral de Hierro", desc: "Excavadora rotativa gigante optimizada para las llanuras ricas en hematita. Rigging complejo de engranajes y cilindros hidráulicos.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
-            { id: 18, student: "Pablo Marín", title: "Módulo Habitacional de Tripulación", desc: "Diseño ergonómico de los domos residenciales de los colonos. Modelado exhaustivo de interiores y mobiliario functional optimizado.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 18, student: "Pablo Marí­n", title: "Módulo Habitacional de Tripulación", desc: "Diseño ergonómico de los domos residenciales de los colonos. Modelado exhaustivo de interiores y mobiliario functional optimizado.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
             { id: 19, student: "Pilar Gormedino", title: "Cúpula Meteorológica", desc: "Estación equipada con radares y barómetros de precisión. Materiales reflectantes de vidrio térmico y animación de radares giratorios.", class: "2º DG", group: "Grupo C", videoId: "1b3HwF4fDfIhCR7S01v_Q-BmMCfCftKqt" },
-            { id: 20, student: "Sara Gentil", title: "El viaje de la idea", desc: "Se trata de un recorrido que hace una bola "la idea" a través de arquitecturas surrealistas sobre un lago en Marte. La bola asciende por escaleras y cruza arcos de manera fluida, simbolizando el proceso creativo hasta que aterriza y se asienta como punto de Diseña Fest. Completando la identidad.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 20, student: "Sara Gentil", title: "El viaje de la idea", desc: "Se trata de un recorrido que hace una bola 'la idea' a través de arquitecturas surrealistas sobre un lago en Marte. La bola asciende por escaleras y cruza arcos de manera fluida, simbolizando el proceso creativo hasta que aterriza y se asienta como punto de Diseña Fest. Completando la identidad.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
             { id: 21, student: "Sara Tejeda", title: "Estación de Carga de Rovers", desc: "Plataforma de abastecimiento energético automatizado por inducción. Iluminación interactiva de recarga de batería mediante nodos.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
             { id: 22, student: "Isabel Calvo / Tomás Ferrer", title: "Módulo de Exploración Volcánica", desc: "Sonda robótica todoterreno adaptada a la caldera del Monte Olimpo. Chasis de titanio blindado con desgaste por microimpactos.", class: "2º DG", group: "Grupo 11", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
-            { id: 23, student: "Manuel Delgado / Laura Cano", title: "Silo Agrícola Automatizado", desc: "Instalación de almacenamiento de cereales y vegetales cultivados en el domo. Rigging de cintas transportadoras y brazos clasificadores.", class: "2º DG", group: "Grupo 12", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 23, student: "Manuel Delgado / Laura Cano", title: "Silo Agrí­cola Automatizado", desc: "Instalación de almacenamiento de cereales y vegetales cultivados en el domo. Rigging de cintas transportadoras y brazos clasificadores.", class: "2º DG", group: "Grupo 12", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
             { id: 24, student: "Santiago Cruz / Miriam Esteban", title: "Colector Solar Parabólico", desc: "Matriz de espejos cóncavos autoguiados para la captación solar térmica concentrada. Animación de seguimiento solar procedural.", class: "2º DG", group: "Grupo 12", videoId: "1_o3rRorMyD7v9B7T3U66y78" }
         ];
 
@@ -779,22 +736,11 @@
         proyectos.forEach(p => {
             const card = document.createElement('section');
             card.className = 'project-card';
+            // CLAVE: Inyectamos el parámetro nativo '#t=1' al final del ID en la llamada del thumbnail de Google Drive.
+            // sz=w600 se procesa por el servidor y el hash del cliente fuerza la captura al segundo 1
             card.innerHTML = `
                 <div>
-                    <div class="video-box" data-video-id="${p.videoId}">
-                        <!-- Fallback HUD que brilla a través de los pixeles negros -->
-                        <div class="hud-blueprint-fallback">
-                            <div class="hud-scanning-line"></div>
-                            <svg class="hud-radar-svg" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="40" stroke="rgba(255, 85, 51, 0.25)" stroke-width="0.5" fill="none" stroke-dasharray="3 3"/>
-                                <circle cx="50" cy="50" r="22" stroke="rgba(255, 85, 51, 0.4)" stroke-width="0.5" fill="none"/>
-                                <line x1="50" y1="5" x2="50" y2="95" stroke="rgba(255, 85, 51, 0.15)" stroke-width="0.3" stroke-dasharray="2 2"/>
-                                <line x1="5" y1="50" x2="95" y2="50" stroke="rgba(255, 85, 51, 0.15)" stroke-width="0.3" stroke-dasharray="2 2"/>
-                                <polygon points="50,15 85,50 50,85 15,50" stroke="rgba(255, 85, 51, 0.12)" stroke-width="0.3" fill="none"/>
-                            </svg>
-                            <div class="hud-radar-text">TELEMETRY_STANDBY // SEC_02</div>
-                        </div>
-                        <div class="video-thumbnail" style="background-image: url('https://drive.google.com/thumbnail?id=${p.videoId}&sz=w600');"></div>
+                    <div class="video-box" style="background-image: url('https://drive.google.com/thumbnail?id=${p.videoId}&sz=w600#t=1');">
                         <div class="video-box-grid"></div>
                         <div class="hud-telemetry-decor"></div>
                         <div class="video-overlay">
@@ -817,18 +763,17 @@
 
             const videoBox = card.querySelector('.video-box');
 
-            // CLAVE 3: Al pasar el ratón por encima, inyectamos dinámicamente un iframe de Google Drive
-            // configurado con '?autoplay=1&mute=1&t=2s' para que arranque directamente en el segundo 2 de forma fluida.
-            // Al retirar el ratón, se destruye el iframe para liberar rendimiento.
+            // --- REPRODUCCIÓN DINÁMICA DE PREVISUALIZACIÓN AL PASAR EL RATÓN (HOVER PREVIEW) ---
+            // Cuando el puntero entra en el contenedor, se inyecta un iframe de Google Drive directamente
+            // con un escalado estándar e inicio limpio en el segundo 1 (t=1s).
             videoBox.addEventListener('mouseenter', () => {
-                // Eliminar iframes previos si existieran por seguridad
                 const prevIframe = videoBox.querySelector('.hover-iframe');
                 if (prevIframe) prevIframe.remove();
 
                 const iframe = document.createElement('iframe');
                 iframe.className = 'hover-iframe';
-                // Forzamos el segundo 2 (t=2s), autoplay, silencio para evitar bloqueos del navegador, y forzamos calidad 1080p
-                iframe.src = `https://drive.google.com/file/d/${p.videoId}/preview?autoplay=1&mute=1&t=2s&vq=hd1080&hd=1`;
+                // URL configurada con el zoom simétrico uniforme original, autoplay, mute, calidad forzada de 1080p e inicio en el segundo 1 (start=1&t=1s)
+                iframe.src = `https://drive.google.com/file/d/${p.videoId}/preview?autoplay=1&mute=1&start=1&t=1s&vq=hd1080&hd=1`;
                 
                 iframe.onload = () => {
                     iframe.classList.add('loaded');
@@ -836,7 +781,7 @@
 
                 videoBox.appendChild(iframe);
 
-                // Ocultar play button y telemetría de portada de forma cinemática mientras se reproduce
+                // Ocultamos la capa decorativa de telemetría y el botón de reproducción
                 const overlay = videoBox.querySelector('.video-overlay');
                 const decor = videoBox.querySelector('.hud-telemetry-decor');
                 if (overlay) overlay.style.opacity = '0';
@@ -847,6 +792,7 @@
                 const iframe = videoBox.querySelector('.hover-iframe');
                 if (iframe) iframe.remove();
 
+                // Restauramos el aspecto visual del overlay y decoración
                 const overlay = videoBox.querySelector('.video-overlay');
                 const decor = videoBox.querySelector('.hud-telemetry-decor');
                 if (overlay) overlay.style.opacity = '1';
@@ -1010,8 +956,8 @@
             modalTitle.innerText = title;
             modalStudent.innerText = student;
             
-            // CLAVE: Forzamos la reproducción en calidad Full HD 1080p inyectando los parámetros de calidad vq=hd1080&hd=1&t=2s
-            modalIframe.src = `https://drive.google.com/file/d/${videoId}/preview?vq=hd1080&hd=1&t=2s`;
+            // CLAVE: Forzamos la reproducción en calidad Full HD 1080p inyectando los parámetros de calidad vq=hd1080&hd=1&t=1s
+            modalIframe.src = `https://drive.google.com/file/d/${videoId}/preview?vq=hd1080&hd=1&t=1s`;
             
             modal.classList.add('active');
             
