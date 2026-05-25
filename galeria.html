@@ -262,7 +262,7 @@
             height: 20px;
         }
 
-        /* --- CONTENEDOR DE VISTA PREVIA MULTICAPA --- */
+        /* --- CONTENEDOR DE VISTA PREVIA --- */
         .video-box {
             position: relative;
             width: 100%;
@@ -298,30 +298,8 @@
         }
 
         .video-box:hover::before {
-            transform: scale(1.06);
-            filter: brightness(1.1);
-        }
-
-        /* Iframe de previsualización (hover) escalado asimétricamente para recortar los elementos nativos de Google Drive */
-        /* CLAVE: Usamos top: -18.5% para desplazar y devorar completamente la barra superior negra. */
-        /* Hacemos left: -17.5% y width: 135% para centrar y sacar de plano los bordes blanquecinos laterales. */
-        /* Al usar height: 135% el final del reproductor y la seekbar blanca de reproducción quedan perfectamente ocultos abajo. */
-        .hover-iframe {
-            position: absolute;
-            top: -18.5%;
-            left: -17.5%;
-            width: 135%;
-            height: 135%;
-            border: 0;
-            outline: none;
-            z-index: 5;
-            pointer-events: none; /* Deja pasar los clics para poder abrir el modal */
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .hover-iframe.loaded {
-            opacity: 1;
+            transform: scale(1.05);
+            filter: brightness(1.15);
         }
 
         /* Rejilla técnica de fondo en el placeholder */
@@ -345,7 +323,7 @@
             position: absolute;
             width: 84%;
             height: 68%;
-            border: 1px dashed rgba(255, 85, 51, 0.2);
+            border: 1px dashed rgba(255, 85, 51, 0.25);
             border-radius: 4px;
             top: 16%;
             left: 8%;
@@ -354,7 +332,12 @@
             align-items: center;
             justify-content: center;
             pointer-events: none;
-            transition: opacity 0.3s ease;
+            transition: all 0.3s ease;
+        }
+
+        .video-box:hover .hud-telemetry-decor {
+            border-color: rgba(255, 85, 51, 0.5);
+            transform: scale(1.02);
         }
 
         .hud-telemetry-decor::before {
@@ -429,9 +412,10 @@
         }
 
         .video-box:hover .play-button {
-            transform: scale(1.1);
+            transform: scale(1.1) rotate(5deg);
             background: var(--color-mars);
             border-color: var(--color-mars);
+            box-shadow: 0 0 25px var(--color-mars);
         }
 
         .video-box:hover .play-button svg {
@@ -709,7 +693,7 @@
             { id: 3, student: "Aitana Garcí­a", title: "Módulo de Aterrizaje Atmosférico", desc: "Reconstrucción tridimensional de un transbordador de descenso tripulado. Se ha desarrollado una fí­sica de partí­culas para simular el fuego de propulsión de los retrocohetes térmicos.", class: "2º DG", group: "Grupo B", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
             { id: 4, student: "Aldara Esteban", title: "Base de Telecomunicaciones de Órbita Alta", desc: "Diseño de una estación de telecomunicaciones en sintoní­a orbital. Animación cinemática del despliegue progresivo de las antenas parabólicas y paneles solares procedurales.", class: "2º DG", group: "Grupo B", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
             { id: 5, student: "Amina Talby", title: "Satélite de Mapeo Geográfico", desc: "Sonda cartográfica de órbita polar. Rigging automatizado de paneles fotovoltaicos y antenas parabólicas con texturas mecánicas de Blender Cycles.", class: "2º DG", group: "Grupo B", videoId: "16FIpYnvmHBSvhe1e5_KN3TMNuX5pxkDO" },
-            { id: 6, student: "Aurora Lahuerta", title: "Rumbo al DF, diseñadores explorando", desc: "La idea central se articula en torno a una revelación escénica: una cascada de lava que actúa como uno de los elementos principales. A medida que la cámara avanza, se empieza a desvelar un entorno oní­rico habitado por elementos inusuales, culminando con la aparición de las iniciales del Diseña Fest (DF).", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 6, student: "Aurora Lahuerta", title: "Rumbo al DF, diseñadores explorando", desc: "La idea central se articula en torno a una revelación escénica: una cascada de lava que actúa como uno de los elementos principales. A medida que la cámara avanza, se empieza a desvelar un entorno oní­rico habitado por elementos inusuales, culminando con la aparición de las iniciales del Diseña Fest (DF).", class: "2º DG", group: "Grupo A", videoId: "1mt5njXB45PksMg3NdHE4eEIJri-VHEDb" },
             { id: 7, student: "Carla Loza", title: "Rover de Carga Pesada", desc: "Diseño 3D de un camión articulado de minerí­a con suspensión hidráulica independiente y neumáticos de aleación deformable modelados proceduralmente.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
             { id: 8, student: "Elisa Burillo", title: "Dron de Reconocimiento 'Aero'", desc: "Vehí­culo aéreo no tripulado cuatrirrotor de despegue vertical adaptado a la baja densidad aérea. Modelado en curvas bezier complejas.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
             { id: 9, student: "Erika Dolz", title: "Planta de Tratamiento Hidrológico", desc: "Instalación encargada de licuar el hielo subterráneo marciano. Texturas de agua procedurales mediante nodos y materiales volumétricos de cristal.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
@@ -762,42 +746,6 @@
             `;
 
             const videoBox = card.querySelector('.video-box');
-
-            // --- REPRODUCCIÓN DINÁMICA DE PREVISUALIZACIÓN AL PASAR EL RATÓN (HOVER PREVIEW) ---
-            // Cuando el puntero entra en el contenedor, se inyecta un iframe de Google Drive directamente
-            // con un escalado estándar e inicio limpio en el segundo 1 (t=1s).
-            videoBox.addEventListener('mouseenter', () => {
-                const prevIframe = videoBox.querySelector('.hover-iframe');
-                if (prevIframe) prevIframe.remove();
-
-                const iframe = document.createElement('iframe');
-                iframe.className = 'hover-iframe';
-                // URL configurada con el zoom simétrico uniforme original, autoplay, mute, calidad forzada de 1080p e inicio en el segundo 1 (start=1&t=1s)
-                iframe.src = `https://drive.google.com/file/d/${p.videoId}/preview?autoplay=1&mute=1&start=1&t=1s&vq=hd1080&hd=1`;
-                
-                iframe.onload = () => {
-                    iframe.classList.add('loaded');
-                };
-
-                videoBox.appendChild(iframe);
-
-                // Ocultamos la capa decorativa de telemetría y el botón de reproducción
-                const overlay = videoBox.querySelector('.video-overlay');
-                const decor = videoBox.querySelector('.hud-telemetry-decor');
-                if (overlay) overlay.style.opacity = '0';
-                if (decor) decor.style.opacity = '0';
-            });
-
-            videoBox.addEventListener('mouseleave', () => {
-                const iframe = videoBox.querySelector('.hover-iframe');
-                if (iframe) iframe.remove();
-
-                // Restauramos el aspecto visual del overlay y decoración
-                const overlay = videoBox.querySelector('.video-overlay');
-                const decor = videoBox.querySelector('.hud-telemetry-decor');
-                if (overlay) overlay.style.opacity = '1';
-                if (decor) decor.style.opacity = '1';
-            });
 
             // --- LISTENERS MEJORADOS PARA INTERACCIONES DE SONIDO SUTILES ---
             card.addEventListener('mouseenter', () => {
