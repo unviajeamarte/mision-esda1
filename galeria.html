@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -117,11 +117,12 @@
             border-bottom: 1px dashed var(--color-border);
         }
 
-        /* Contenedor del Logo ESDA alineado arriba a la izquierda */
+        /* Contenedor del Logo ESDA alineado arriba a la izquierda y alineado simétricamente con el botón solar */
         .logo-container {
             position: absolute;
             top: 35px;
             left: 20px;
+            height: 38px; /* Misma altura que el botón del sol/luna */
             display: flex;
             align-items: center;
             z-index: 10;
@@ -159,6 +160,9 @@
                 position: absolute;
                 top: 25px;
                 left: 20px;
+                height: 38px;
+                display: flex;
+                align-items: center;
             }
             .theme-toggle {
                 position: absolute;
