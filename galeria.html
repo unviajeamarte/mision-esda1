@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misión Marte - Galería de Proyectos</title>
+    <!-- Importamos exactamente las dos fuentes elegantes solicitadas de Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- CONFIGURACIÓN DE COLORES Y VARIABLES HUD --- */
+        :root {
+            --color-bg: #060203;
+            --color-mars: #ff5533;
+            --color-mars-glow: rgba(255, 85, 51, 0.4);
+            --color-text-primary: #ffffff;
+            --color-text-secondary: #a3b8cc;
+            --color-glass: rgba(16, 8, 10, 0.75);
+            --color-border: rgba(255, 85, 51, 0.22);
+        }
+
+        /* --- ESTILOS GENERALES --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Nunito', sans-serif; 
+        }
+
+        body {
+            background-color: var(--color-bg);
+            color: var(--color-text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Fondo dinámico de gas vaporoso de aterrizaje y destellos */
+        #gas-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* --- CABECERA DE LA INTERFAZ DE NAVEGACIÓN --- */
+        header {
+            position: relative;
+            z-index: 1;
+            max-width: 1300px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 40px 20px 20px 20px;
+            text-align: center;
+            border-bottom: 1px dashed rgba(255, 85, 51, 0.2);
+        }
+
+        /* Contenedor del Logo ESDA alineado arriba a la izquierda */
+        .logo-container {
+            position: absolute;
+            top: 35px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .logo-esda {
+            height: 30px; 
+            width: auto;
+            opacity: 0.85;
+            transition: opacity 0.3s ease, filter 0.3s ease;
+            /* Fuerza a que el logotipo original se vuelva completamente blanco brillante */
+            filter: brightness(0) invert(1);
+        }
+
+        .logo-esda:hover {
+            opacity: 1;
+            /* Mantiene el logotipo en blanco y le suma el sutil resplandor marciano */
+            filter: brightness(0) invert(1) drop-shadow(0 0 6px var(--color-mars-glow));
+        }
+
+        /* Ajuste responsive para pantallas pequeñas */
+        @media (max-width: 900px) {
+            header {
+                padding-top: 85px; /* Deja espacio para el logo arriba */
+            }
+            .logo-container {
+                position: relative;
+                top: 0;
+                left: 0;
+                justify-content: center;
+                margin-bottom: 20px;
+            }
+        }
+
+        .hud-subtitle {
+            font-family: 'Montserrat', sans-serif; /* Tipografía destacada HUD */
+            font-size: 0.85rem;
+            color: var(--color-mars);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        header h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.8rem;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            margin: 10px 0;
+            font-weight: 900;
+            text-shadow: 0 0 20px rgba(255, 85, 51, 0.2);
+        }
+
+        .hud-line {
+            width: 120px;
+            height: 2px;
+            background-color: var(--color-mars);
+            margin: 15px auto;
+            box-shadow: 0 0 10px var(--color-mars);
+        }
+
+        .edition-tag {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .hud-description {
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.8rem;
+            color: #ffffff;
+            max-width: 650px;
+            margin: 15px auto 0 auto;
+            line-height: 1.6;
+            font-weight: 300;
+            text-transform: initial; 
+            opacity: 0.9;
+        }
+
+        /* Botón inmersivo de retorno */
+        .btn-return {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 25px;
+            width: 48px;
+            height: 48px;
+            border: 1px solid rgba(255, 85, 51, 0.3);
+            border-radius: 50%;
+            background: rgba(255, 85, 51, 0.02);
+            color: var(--color-mars);
+            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        .btn-return:hover {
+            background: var(--color-mars);
+            color: #010103;
+            box-shadow: 0 0 15px var(--color-mars-glow);
+            transform: translateY(-4px) scale(1.05);
+        }
+
+        /* Icono de la nave espacial despegando */
+        .spaceship-nav-icon {
+            width: 24px;
+            height: 24px;
+            transition: transform 0.3s ease;
+        }
+
+        .btn-return:hover .spaceship-nav-icon {
+            transform: translateY(-2px);
+        }
+
+        /* --- GRID PRINCIPAL EN DOS COLUMNAS --- */
+        main {
+            position: relative;
+            z-index: 1;
+            max-width: 1300px;
+            width: 100%;
+            margin: 30px auto;
+            padding: 0 20px 40px 20px;
+            flex-grow: 1;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 40px;
+        }
+
+        /* Adaptabilidad a dispositivos de menor tamaño */
+        @media (max-width: 1000px) {
+            .gallery-grid {
+                grid-template-columns: 1fr; 
+                gap: 30px;
+            }
+        }
+
+        /* --- TARJETAS DE PROYECTOS --- */
+        .project-card {
+            background: var(--color-glass);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 24px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Marcadores estéticos de esquina estilo HUD */
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 12px;
+            height: 12px;
+            border-top: 2px solid var(--color-mars);
+            border-left: 2px solid var(--color-mars);
+            opacity: 0.4;
+            transition: all 0.3s ease;
+        }
+
+        .project-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 12px;
+            height: 12px;
+            border-bottom: 2px solid var(--color-mars);
+            border-right: 2px solid var(--color-mars);
+            opacity: 0.4;
+            transition: all 0.3s ease;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 85, 51, 0.5);
+            box-shadow: 0 12px 30px rgba(255, 85, 51, 0.12), inset 0 0 15px rgba(255, 85, 51, 0.05);
+        }
+
+        .project-card:hover::before, .project-card:hover::after {
+            opacity: 1;
+            width: 20px;
+            height: 20px;
+        }
+
+        /* --- CONTENEDOR DE VISTA PREVIA MULTICAPA --- */
+        .video-box {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* Relación de aspecto 16:9 */
+            background-color: #0b0507;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 85, 51, 0.2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* Capa 1: El fondo de calibración HUD que se revela si el thumbnail es negro */
+        .hud-blueprint-fallback {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: radial-gradient(circle at center, #1a080a 0%, #060203 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .hud-scanning-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--color-mars), transparent);
+            top: 0;
+            animation: scanLine 4s infinite linear;
+            opacity: 0.25;
+        }
+
+        @keyframes scanLine {
+            0% { top: 0%; }
+            100% { top: 100%; }
+        }
+
+        .hud-radar-svg {
+            position: absolute;
+            width: 45%;
+            height: 45%;
+            animation: rotateRadar 20s infinite linear;
+            opacity: 0.4;
+            filter: drop-shadow(0 0 4px var(--color-mars-glow));
+        }
+
+        @keyframes rotateRadar {
+            100% { transform: rotate(360deg); }
+        }
+
+        .hud-radar-text {
+            position: absolute;
+            bottom: 15px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 8px;
+            color: rgba(255, 85, 51, 0.5);
+            letter-spacing: 2px;
+            font-weight: 700;
+        }
+
+        /* Capa 2: Miniatura cargada de Google Drive */
+        .video-thumbnail {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: 1;
+            transition: transform 0.5s ease, opacity 0.3s ease;
+            /* CLAVE: Mezcla de color para que los pixeles negros se vuelvan totalmente transparentes */
+            mix-blend-mode: screen; 
+            opacity: 0.85;
+        }
+
+        /* Capa 3: Iframe dinámico que se cargará solo en hover */
+        .hover-iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+            z-index: 5;
+            pointer-events: none; /* Permite clickar para abrir modal */
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .hover-iframe.loaded {
+            opacity: 1;
+        }
+
+        /* Rejilla técnica de fondo en el placeholder */
+        .video-box-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(255, 85, 51, 0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 85, 51, 0.08) 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-position: center;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* Ondas e iconos estéticos de la interfaz de telemetría de Marte */
+        .hud-telemetry-decor {
+            position: absolute;
+            width: 84%;
+            height: 68%;
+            border: 1px dashed rgba(255, 85, 51, 0.2);
+            border-radius: 4px;
+            top: 16%;
+            left: 8%;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .hud-telemetry-decor::before {
+            content: 'SYSTEM ONLINE // FEED 1080P';
+            position: absolute;
+            top: 6px;
+            left: 8px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 7px;
+            color: rgba(255, 85, 51, 0.6);
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
+
+        .hud-telemetry-decor::after {
+            content: 'REC •';
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 8px;
+            color: var(--color-mars);
+            letter-spacing: 1.5px;
+            font-weight: 900;
+            text-shadow: 0 0 5px rgba(255, 85, 51, 0.8);
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        /* Capa superpuesta con botón Play personalizado para indicar acción */
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(6, 2, 3, 0.45);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background 0.3s ease, opacity 0.3s ease;
+            z-index: 3;
+        }
+
+        .video-box:hover .video-overlay {
+            background: rgba(255, 85, 51, 0.05);
+        }
+
+        .play-button {
+            width: 54px;
+            height: 54px;
+            background: rgba(16, 8, 10, 0.9);
+            border: 1px solid var(--color-mars);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 15px var(--color-mars-glow);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.3s ease;
+            z-index: 4;
+        }
+
+        .play-button svg {
+            fill: #ffffff;
+            width: 20px;
+            height: 20px;
+            margin-left: 3px;
+            transition: fill 0.3s ease;
+        }
+
+        .video-box:hover .play-button {
+            transform: scale(1.1);
+            background: var(--color-mars);
+            border-color: var(--color-mars);
+        }
+
+        .video-box:hover .play-button svg {
+            fill: #010103;
+        }
+
+        /* --- ESTILOS DE INFORMACIÓN --- */
+        .student-tag {
+            font-family: 'Montserrat', sans-serif;
+            display: inline-block;
+            font-size: 0.75rem;
+            color: var(--color-mars);
+            border: 1px solid rgba(255, 85, 51, 0.3);
+            background: rgba(255, 85, 51, 0.05);
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .project-card h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.3rem;
+            color: var(--color-text-primary);
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+        }
+
+        .project-card p {
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.95rem;
+            color: var(--color-text-secondary);
+            line-height: 1.6;
+            margin-bottom: 15px;
+            font-weight: 300;
+        }
+
+        /* Pie de tarjeta adaptado */
+        .card-footer {
+            font-family: 'Montserrat', sans-serif;
+            margin-top: auto;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #6a7c91;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        .class-badge {
+            color: var(--color-text-secondary);
+        }
+
+        .group-badge {
+            color: var(--color-mars);
+        }
+
+        /* --- PANEL CINEMÁTICO EN EXPANSIÓN (A MEDIA PANTALLA) --- */
+        .video-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(3, 1, 2, 0.95);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        .video-modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* Contenedor central a Media Pantalla */
+        .modal-content {
+            width: 55vw;
+            max-width: 1000px;
+            min-width: 320px;
+            background: var(--color-glass);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 18px;
+            box-shadow: 0 20px 50px rgba(255, 85, 51, 0.25);
+            position: relative;
+            transform: scale(0.92);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+        }
+
+        @media (max-width: 1100px) {
+            .modal-content {
+                width: 85vw;
+            }
+        }
+
+        .video-modal.active .modal-content {
+            transform: scale(1);
+        }
+
+        /* Marco 16:9 interactivo del reproductor de Google Drive */
+        .modal-video-wrapper {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%;
+            background: #000;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 85, 51, 0.3);
+        }
+
+        .modal-video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+            outline: none;
+        }
+
+        /* Botón de cierre superior */
+        .modal-close {
+            font-family: 'Montserrat', sans-serif;
+            position: absolute;
+            top: -45px;
+            right: 0;
+            background: none;
+            border: 1px solid rgba(255, 85, 51, 0.4);
+            border-radius: 4px;
+            color: #ffffff;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 6px 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 700;
+        }
+
+        .modal-close:hover {
+            background: var(--color-mars);
+            color: #010103;
+            box-shadow: 0 0 10px var(--color-mars-glow);
+        }
+
+        .modal-info-box {
+            margin-top: 15px;
+            padding: 5px 5px 0 5px;
+        }
+
+        .modal-info-box h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.25rem;
+            color: #ffffff;
+            margin-bottom: 4px;
+            font-weight: 700;
+        }
+
+        .modal-info-box p {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.85rem;
+            color: var(--color-mars);
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        /* --- FOOTER (PIE DE PÁGINA) --- */
+        footer {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            text-align: center;
+            padding: 30px 20px;
+            margin-top: auto;
+            border-top: 1px dashed rgba(255, 85, 51, 0.15);
+            background: rgba(4, 2, 3, 0.8);
+        }
+
+        footer p {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.85rem;
+            color: #6a7c91;
+            letter-spacing: 3px;
+            font-weight: 400; 
+        }
+
+        footer p span {
+            color: var(--color-mars);
+            text-shadow: 0 0 10px var(--color-mars-glow);
+            font-weight: 400; 
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Canvas de soporte para el fondo de gas dinámico (tormenta atmosférica) -->
+    <canvas id="gas-background"></canvas>
+
+    <!-- Cabecera HUD -->
+    <header>
+        <!-- Logotipo ESDA en la parte superior izquierda -->
+        <div class="logo-container">
+            <a href="https://esda.es/" target="_blank" rel="noopener noreferrer">
+                <img src="https://esda.es/wp-content/uploads/2023/03/ESDA-logo-horizontal.svg" alt="ESDA Logo" class="logo-esda" onerror="this.onerror=null; this.src='https://esda.es/images/logo.png';">
+            </a>
+        </div>
+
+        <p class="hud-subtitle">Misiones de Reconocimiento</p>
+        <h1>Paisajes marcianos</h1>
+        <div class="hud-line"></div>
+        <p class="edition-tag"> 2º de Diseño Gráfico | 25-26</p>
+        
+        <p class="hud-description">Desde la asignatura de Medios Informáticos II, inspirados en el concepto del DiseñaFest’26, se propone a los alumnos imaginar una escena en Marte. Con total libertad creativa, en cuanto a su visión y estética, y después de todo el desarrollo del proyecto (ADD) en Blender, diseñaron un breve teaser promocional del Festival. A continuación una muestra. </p>
+
+        <!-- Retorno al Index 3D -->
+        <a href="index.html" class="btn-return" id="btn-back" title="Volver a la Nave / Landing">
+            <svg class="spaceship-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2s-5 4-5 10c0 1.5 1 2.5 2 3h6c1-0.5 2-1.5 2-3 0-6-5-10-5-10z" />
+                <path d="M9 15l-3 2v-4" />
+                <path d="M15 15l3 2v-4" />
+                <path d="M12 17v5" />
+                <path d="M10 18.5l2 3.5 2-3.5" />
+                <circle cx="12" cy="8" r="1.5" fill="currentColor"/>
+            </svg>
+        </a>
+    </header>
+
+    <!-- Contenedor de Proyectos en Dos Columnas -->
+    <main>
+        <div class="gallery-grid" id="gallery-container">
+            <!-- Los 30 elementos se renderizan procedimentalmente por JS -->
+        </div>
+    </main>
+
+    <!-- REPRODUCTOR MODAL AMPLIADO A MEDIA PANTALLA -->
+    <div class="video-modal" id="video-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="modal-close">Cerrar [X]</button>
+            <div class="modal-video-wrapper">
+                <iframe id="modal-iframe" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            </div>
+            <div class="modal-info-box">
+                <h3 id="modal-title">Título del Proyecto</h3>
+                <p id="modal-student">Autor/es</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pie de Página -->
+    <footer>
+        <p>J.M. Cifuentes | <span>ESDA</span> Curso 2025 - 2026</p>
+    </footer>
+
+    <!-- SCRIPT DE EFECTOS VISUALES Y SONOROS (WEB AUDIO API) -->
+    <script>
+        // --- 1. BANCO DE DATOS DE LOS 30 PROYECTOS CON TU NUEVO ID EN EL PROYECTO 1 ---
+        const proyectos = [
+            { id: 1, student: "Alejandro Bellosta", title: "Sonda Robotizada de Superficie", desc: "Modelado industrial (Hard-Surface) y ensamblado mecánico de un vehículo robotizado autónomo de exploración. Animación por armadura (rigging) para el comportamiento de las orugas articuladas.", class: "2º DG", group: "Grupo B", videoId: "1oi6maskOayEdoypr17dYPJaWJ242s_3R" },
+            { id: 2, student: "Ana María Cojocaru", title: "Invernadero Hidropónico Autosuficiente", desc: "Propuesta arquitectónica de domos geodésicos translúcidos para el cultivo y soporte vital de la primera colonia. Destaca por el tratamiento de sombreadores y materiales de cristal orgánico.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 3, student: "Aitana García", title: "Módulo de Aterrizaje Atmosférico", desc: "Reconstrucción tridimensional de un transbordador de descenso tripulado. Se ha desarrollado una física de partículas para simular el fuego de propulsión de los retrocohetes térmicos.", class: "2º DG", group: "Grupo B", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 4, student: "Aldara Esteban", title: "Base de Telecomunicaciones de Órbita Alta", desc: "Diseño de una estación de telecomunicaciones en sintonía orbital. Animación cinemática del despliegue progresivo de las antenas parabólicas y paneles solares procedurales.", class: "2º DG", group: "Grupo B", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 5, student: "Amina Talby", title: "Satélite de Mapeo Geográfico", desc: "Sonda cartográfica de órbita polar. Rigging automatizado de paneles fotovoltaicos y antenas parabólicas con texturas mecánicas de Blender Cycles.", class: "2º DG", group: "Grupo B", videoId: "16FIpYnvmHBSvhe1e5_KN3TMNuX5pxkDO" },
+            { id: 6, student: "Aurora Lahuerta", title: "Rumbo al DF, diseñadores explorando", desc: "La idea central se articula en torno a una revelación escénica: una cascada  de lava que actúa como uno de los elementos principales. A medida que la cámara avanza, se empieza a desvelar un  entorno onírico habitado por elementos inusuales, culminando con la aparición de las iniciales del Diseña Fest (DF).", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 7, student: "Carla Loza", title: "Rover de Carga Pesada", desc: "Diseño 3D de un camión articulado de minería con suspensión hidráulica independiente y neumáticos de aleación deformable modelados proceduralmente.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 8, student: "Elisa Burillo", title: "Dron de Reconocimiento 'Aero'", desc: "Vehículo aéreo no tripulado cuatrirrotor de despegue vertical adaptado a la baja densidad aérea. Modelado en curvas bezier complejas.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 9, student: "Erika Dolz", title: "Planta de Tratamiento Hidrológico", desc: "Instalación encargada de licuar el hielo subterráneo marciano. Texturas de agua procedurales mediante nodos y materiales volumétricos de cristal.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 10, student: "Eva Ayuda", title: "Lo inerte despierta", desc: "Estación rodante equipada con instrumental analítico de precisión. Animación de brazos robóticos y sensores cinemáticos integrados.", class: "2º DG", group: "Grupo C", videoId: "1mt5njXB45PksMg3NdHE4eEIJri-VHEDb" },
+            { id: 11, student: "Jorge Vaquerizo", title: "Laboratorio Científico Móvil", desc: "Estación rodante equipada con instrumental analítico de precisión. Animación de brazos robóticos y sensores cinemáticos integrados.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 12, student: "Izarbe Pescador", title: "Domo de Almacenamiento Modular", desc: "Módulos de logística y carga presurizados de acoplamiento automático. Iluminación nocturna sutil de cabina con sombreadores de emisión.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 13, student: "Lara Benítez", title: "Cohete de Retorno Orbital", desc: "Lanzador de dos etapas diseñado para reincorporarse con el transbordador nodriza. Dinámicas de humo volumétrico mediante sombreadores Pyro de Blender.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 14, student: "Leyre Flores", title: "El diseño de un nuevo mundo", desc: "Marte como un nuevo mundo que ya ha empezado a ser habitado, quería representar un espacio algo tenebroso, con formas exóticas que transmitieran la sensación de estar en un territorio desconocido. Sin embargo, el recorrido, el pasadizo y el altar funcionan como señales de presencia humana, como si los diseñadores ya hubieran comenzado a construir y dar sentido a ese nuevo planeta. Por eso el texto DiseñaFest aparece elevado sobre un altar, en un lugar importante y de valor, simbolizando el papel del diseño en la creación de este nuevo mundo.", class: "2º DG", group: "Grupo A", videoId: "1Ib6MWlcpqi7Y4KBYUEd45D94UVtMAzDk" },
+            { id: 15, student: "Marina Buil", title: "Generador de Campo Magnético", desc: "Estructura de bobinas superconductoras gigantes para restaurar la magnetosfera marciana. Animación de destellos de plasma por composición.", class: "2º DG", group: "Grupo B", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 16, student: "Michelle Vela", title: "El recorrido del hielo en Marte", desc: "Este proyecto ha buscado crear un entorno que si bien está inspirado en el planeta rojo, plantea un escenario diferente al que solemos imaginarnos. Con el pretexto de que se han encontrado indicios de la existencia de agua helada bajo el suelo de Marte, el eje de la animación se centra en mostrar una versión de esta hipótesis, claramente inspirada e influenciada por la ciencia ficción. Por ello, lo que observamos, aparte de especies de plantas alienígenas y formaciones rocosas de formas extrañas, es un gran río de hielo. Este no sigue las leyes físicas o químicas de nuestro planeta, y acaba formando esferas que se elevan hacia el cielo y desembocan en un gran lago. ", class: "2º DG", group: "Grupo C", videoId: "1oi6maskOayEdoypr17dYPJaWJ242s_3R" },
+            { id: 17, student: "Miriam Serrano", title: "Extractor de Mineral de Hierro", desc: "Excavadora rotativa gigante optimizada para las llanuras ricas en hematita. Rigging complejo de engranajes y cilindros hidráulicos.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 18, student: "Pablo Marín", title: "Módulo Habitacional de Tripulación", desc: "Diseño ergonómico de los domos residenciales de los colonos. Modelado exhaustivo de interiores y mobiliario functional optimizado.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 19, student: "Pilar Gormedino", title: "Cúpula Meteorológica", desc: "Estación equipada con radares y barómetros de precisión. Materiales reflectantes de vidrio térmico y animación de radares giratorios.", class: "2º DG", group: "Grupo C", videoId: "1b3HwF4fDfIhCR7S01v_Q-BmMCfCftKqt" },
+            { id: 20, student: "Sara Gentil", title: "El viaje de la idea", desc: "Se trata de un recorrido que hace una bola "la idea" a través de arquitecturas surrealistas sobre un lago en Marte. La bola asciende por escaleras y cruza arcos de manera fluida, simbolizando el proceso creativo hasta que aterriza y se asienta como punto de Diseña Fest. Completando la identidad.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 21, student: "Sara Tejeda", title: "Estación de Carga de Rovers", desc: "Plataforma de abastecimiento energético automatizado por inducción. Iluminación interactiva de recarga de batería mediante nodos.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 22, student: "Isabel Calvo / Tomás Ferrer", title: "Módulo de Exploración Volcánica", desc: "Sonda robótica todoterreno adaptada a la caldera del Monte Olimpo. Chasis de titanio blindado con desgaste por microimpactos.", class: "2º DG", group: "Grupo 11", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 23, student: "Manuel Delgado / Laura Cano", title: "Silo Agrícola Automatizado", desc: "Instalación de almacenamiento de cereales y vegetales cultivados en el domo. Rigging de cintas transportadoras y brazos clasificadores.", class: "2º DG", group: "Grupo 12", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 24, student: "Santiago Cruz / Miriam Esteban", title: "Colector Solar Parabólico", desc: "Matriz de espejos cóncavos autoguiados para la captación solar térmica concentrada. Animación de seguimiento solar procedural.", class: "2º DG", group: "Grupo 12", videoId: "1_o3rRorMyD7v9B7T3U66y78" }
+        ];
+
+        // --- 2. RENDERIZADO PROCEDIMENTAL DE LAS TARJETAS ---
+        const container = document.getElementById('gallery-container');
+
+        proyectos.forEach(p => {
+            const card = document.createElement('section');
+            card.className = 'project-card';
+            card.innerHTML = `
+                <div>
+                    <div class="video-box" data-video-id="${p.videoId}">
+                        <!-- Fallback HUD que brilla a través de los pixeles negros -->
+                        <div class="hud-blueprint-fallback">
+                            <div class="hud-scanning-line"></div>
+                            <svg class="hud-radar-svg" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="40" stroke="rgba(255, 85, 51, 0.25)" stroke-width="0.5" fill="none" stroke-dasharray="3 3"/>
+                                <circle cx="50" cy="50" r="22" stroke="rgba(255, 85, 51, 0.4)" stroke-width="0.5" fill="none"/>
+                                <line x1="50" y1="5" x2="50" y2="95" stroke="rgba(255, 85, 51, 0.15)" stroke-width="0.3" stroke-dasharray="2 2"/>
+                                <line x1="5" y1="50" x2="95" y2="50" stroke="rgba(255, 85, 51, 0.15)" stroke-width="0.3" stroke-dasharray="2 2"/>
+                                <polygon points="50,15 85,50 50,85 15,50" stroke="rgba(255, 85, 51, 0.12)" stroke-width="0.3" fill="none"/>
+                            </svg>
+                            <div class="hud-radar-text">TELEMETRY_STANDBY // SEC_02</div>
+                        </div>
+                        <div class="video-thumbnail" style="background-image: url('https://drive.google.com/thumbnail?id=${p.videoId}&sz=w600');"></div>
+                        <div class="video-box-grid"></div>
+                        <div class="hud-telemetry-decor"></div>
+                        <div class="video-overlay">
+                            <div class="play-button">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="student-tag">${p.student}</span>
+                    <h2>${p.title}</h2>
+                    <p>${p.desc}</p>
+                </div>
+                <div class="card-footer">
+                    <span class="class-badge">${p.class}</span>
+                    <span class="group-badge">${p.group}</span>
+                </div>
+            `;
+
+            const videoBox = card.querySelector('.video-box');
+
+            // CLAVE 3: Al pasar el ratón por encima, inyectamos dinámicamente un iframe de Google Drive
+            // configurado con '?autoplay=1&mute=1&t=2s' para que arranque directamente en el segundo 2 de forma fluida.
+            // Al retirar el ratón, se destruye el iframe para liberar rendimiento.
+            videoBox.addEventListener('mouseenter', () => {
+                // Eliminar iframes previos si existieran por seguridad
+                const prevIframe = videoBox.querySelector('.hover-iframe');
+                if (prevIframe) prevIframe.remove();
+
+                const iframe = document.createElement('iframe');
+                iframe.className = 'hover-iframe';
+                // Forzamos el segundo 2 (t=2s), autoplay, silencio para evitar bloqueos del navegador, y forzamos calidad 1080p
+                iframe.src = `https://drive.google.com/file/d/${p.videoId}/preview?autoplay=1&mute=1&t=2s&vq=hd1080&hd=1`;
+                
+                iframe.onload = () => {
+                    iframe.classList.add('loaded');
+                };
+
+                videoBox.appendChild(iframe);
+
+                // Ocultar play button y telemetría de portada de forma cinemática mientras se reproduce
+                const overlay = videoBox.querySelector('.video-overlay');
+                const decor = videoBox.querySelector('.hud-telemetry-decor');
+                if (overlay) overlay.style.opacity = '0';
+                if (decor) decor.style.opacity = '0';
+            });
+
+            videoBox.addEventListener('mouseleave', () => {
+                const iframe = videoBox.querySelector('.hover-iframe');
+                if (iframe) iframe.remove();
+
+                const overlay = videoBox.querySelector('.video-overlay');
+                const decor = videoBox.querySelector('.hud-telemetry-decor');
+                if (overlay) overlay.style.opacity = '1';
+                if (decor) decor.style.opacity = '1';
+            });
+
+            // --- LISTENERS MEJORADOS PARA INTERACCIONES DE SONIDO SUTILES ---
+            card.addEventListener('mouseenter', () => {
+                if (audioCtx && audioCtx.state === 'running') {
+                    playCardHoverSound(1200); 
+                }
+            });
+
+            videoBox.addEventListener('mouseenter', (e) => {
+                e.stopPropagation();
+                if (audioCtx && audioCtx.state === 'running') {
+                    playCardHoverSound(1650); 
+                }
+            });
+
+            videoBox.addEventListener('click', () => {
+                openWarpModal(p.student, p.title, p.videoId);
+            });
+
+            container.appendChild(card);
+        });
+
+
+        // --- 3. FONDO DE GAS DE ATERRIZAJE FLUIDO Y DESTELLOS ASCENDENTES (CANVAS 2D) ---
+        const canvas = document.getElementById('gas-background');
+        const canvasCtx = canvas.getContext('2d');
+
+        let gasClouds = [];
+        let sparks = []; 
+        const numClouds = 26; 
+        const maxSparks = 60; 
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initGas();
+        }
+
+        function initGas() {
+            gasClouds = [];
+            sparks = [];
+            for (let i = 0; i < numClouds; i++) {
+                gasClouds.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height + canvas.height * 0.1, 
+                    radius: 200 + Math.random() * 250, 
+                    opacity: 0.03 + Math.random() * 0.06, 
+                    speedY: -(0.1 + Math.random() * 0.25), 
+                    speedX: (Math.random() - 0.5) * 0.12,  
+                    color: Math.random() > 0.4 ? 'rgba(235, 110, 50, ' : 'rgba(215, 80, 30, '
+                });
+            }
+            for (let i = 0; i < maxSparks; i++) {
+                createSpark(true);
+            }
+        }
+
+        function createSpark(randomY = false) {
+            const size = 0.3 + Math.pow(Math.random(), 3.5) * 4.2;
+            sparks.push({
+                x: Math.random() * canvas.width,
+                y: randomY ? Math.random() * canvas.height : canvas.height + 10 + Math.random() * 30,
+                size: size,
+                alpha: 0.1 + Math.random() * 0.8,
+                fadeSpeed: 0.001 + Math.random() * 0.005,
+                speedY: -(0.3 + (4.5 - size) * 0.15 + Math.random() * 0.4), 
+                speedX: (Math.random() - 0.5) * 0.3, 
+                pulseSpeed: 0.03 + Math.random() * 0.07, 
+                pulseDir: Math.random() > 0.5 ? 1 : -1,
+                color: Math.random() > 0.25 ? 'rgba(255, 85, 51, ' : 'rgba(255, 180, 110, ' 
+            });
+        }
+
+        function drawGas() {
+            canvasCtx.fillStyle = '#060204'; 
+            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const baseGrad = canvasCtx.createLinearGradient(0, canvas.height, 0, 0);
+            baseGrad.addColorStop(0, 'rgba(180, 55, 20, 0.15)');
+            baseGrad.addColorStop(0.5, 'rgba(235, 110, 50, 0.05)');
+            baseGrad.addColorStop(1, 'transparent');
+            canvasCtx.fillStyle = baseGrad;
+            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < gasClouds.length; i++) {
+                const gc = gasClouds[i];
+                
+                const grad = canvasCtx.createRadialGradient(gc.x, gc.y, 0, gc.x, gc.y, gc.radius);
+                grad.addColorStop(0, `${gc.color}${gc.opacity})`);
+                grad.addColorStop(0.4, `${gc.color}${gc.opacity * 0.45})`);
+                grad.addColorStop(1, 'rgba(0,0,0,0)');
+
+                canvasCtx.fillStyle = grad;
+                canvasCtx.beginPath();
+                canvasCtx.arc(gc.x, gc.y, gc.radius, 0, Math.PI * 2);
+                canvasCtx.fill();
+
+                gc.y += gc.speedY;
+                gc.x += gc.speedX;
+
+                if (gc.y + gc.radius < 0) {
+                    gc.y = canvas.height + gc.radius;
+                    gc.x = Math.random() * canvas.width;
+                    gc.radius = 200 + Math.random() * 250;
+                    gc.opacity = 0.03 + Math.random() * 0.06;
+                }
+            }
+
+            for (let i = sparks.length - 1; i >= 0; i--) {
+                const s = sparks[i];
+
+                canvasCtx.beginPath();
+                canvasCtx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                canvasCtx.fillStyle = `${s.color}${s.alpha})`;
+                canvasCtx.shadowColor = '#ff5533';
+                canvasCtx.shadowBlur = s.size * 2.5; 
+                canvasCtx.fill();
+                canvasCtx.shadowBlur = 0; 
+
+                s.y += s.speedY;
+                s.x += s.speedX;
+
+                s.alpha += s.pulseSpeed * s.pulseDir;
+                if (s.alpha > 0.9) {
+                    s.alpha = 0.9;
+                    s.pulseDir = -1;
+                } else if (s.alpha < 0.15) {
+                    s.alpha = 0.15;
+                    s.pulseDir = 1;
+                }
+
+                s.alpha -= s.fadeSpeed;
+
+                if (s.y < -10 || s.alpha <= 0) {
+                    sparks.splice(i, 1);
+                    createSpark(false);
+                }
+            }
+
+            requestAnimationFrame(drawGas);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        drawGas();
+
+
+        // --- 4. REPRODUCTOR DE EXPANSIÓN A MEDIA PANTALLA ---
+        const modal = document.getElementById('video-modal');
+        const modalIframe = document.getElementById('modal-iframe');
+        const modalTitle = document.getElementById('modal-title');
+        const modalStudent = document.getElementById('modal-student');
+        const modalClose = document.getElementById('modal-close');
+
+        function openWarpModal(student, title, videoId) {
+            modalTitle.innerText = title;
+            modalStudent.innerText = student;
+            
+            // CLAVE: Forzamos la reproducción en calidad Full HD 1080p inyectando los parámetros de calidad vq=hd1080&hd=1&t=2s
+            modalIframe.src = `https://drive.google.com/file/d/${videoId}/preview?vq=hd1080&hd=1&t=2s`;
+            
+            modal.classList.add('active');
+            
+            if (audioCtx) {
+                playClickSound();
+            }
+        }
+
+        function closeWarpModal() {
+            modalIframe.src = ""; 
+            modal.classList.remove('active');
+            
+            if (audioCtx) {
+                playClickSound();
+            }
+        }
+
+        modalClose.addEventListener('click', closeWarpModal);
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeWarpModal();
+            }
+        });
+
+
+        // --- 5. GENERADOR DE SONIDOS SUTILES DE INTERFAZ (WEB AUDIO API) ---
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioCtx;
+        }
+
+        function playCardHoverSound(frequency = 1400) {
+            const ctxAudio = getAudioContext();
+            if (!ctxAudio) return;
+
+            if (ctxAudio.state === 'suspended') {
+                ctxAudio.resume().then(() => {
+                    triggerOscillator(ctxAudio, frequency);
+                }).catch(() => {});
+            } else if (ctxAudio.state === 'running') {
+                triggerOscillator(ctxAudio, frequency);
+            }
+        }
+
+        function triggerOscillator(ctxAudio, frequency) {
+            const osc = ctxAudio.createOscillator();
+            const gainNode = ctxAudio.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(frequency, ctxAudio.currentTime); 
+
+            gainNode.gain.setValueAtTime(0.0, ctxAudio.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.005, ctxAudio.currentTime + 0.01); 
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + 0.15); 
+
+            osc.connect(gainNode);
+            gainNode.connect(ctxAudio.destination);
+
+            osc.start();
+            osc.stop(ctxAudio.currentTime + 0.16);
+        }
+
+        function playClickSound() {
+            const ctxAudio = getAudioContext();
+            if (!ctxAudio || ctxAudio.state !== 'running') return;
+
+            const osc = ctxAudio.createOscillator();
+            const gainNode = ctxAudio.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(450, ctxAudio.currentTime); 
+
+            gainNode.gain.setValueAtTime(0.0, ctxAudio.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.03, ctxAudio.currentTime + 0.01);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + 0.3);
+
+            osc.connect(gainNode);
+            gainNode.connect(ctxAudio.destination);
+
+            osc.start();
+            osc.stop(ctxAudio.currentTime + 0.35);
+        }
+
+        const backBtn = document.getElementById('btn-back');
+        backBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (audioCtx) {
+                playClickSound();
+            }
+            setTimeout(() => {
+                window.location.href = backBtn.getAttribute('href');
+            }, 250);
+        });
+
+        const resumeAudio = () => {
+            const ctxAudio = getAudioContext();
+            if (ctxAudio && ctxAudio.state === 'suspended') {
+                ctxAudio.resume();
+            }
+        };
+
+        window.addEventListener('click', resumeAudio);
+        window.addEventListener('touchstart', resumeAudio);
+        window.addEventListener('mousedown', resumeAudio);
+        window.addEventListener('keydown', resumeAudio);
+    </script>
+</body>
+</html>

@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misión Marte - Proyectos Blender</title>
+    <!-- Importamos las fuentes para el visor HUD -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- ESTILOS GENERALES --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #010103;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            cursor: pointer;
+        }
+
+        #space-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* --- MARCO DE INTERFAZ HUD (PANTALLA DE CABINA) --- */
+        .hud-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+            border: 1px solid rgba(255, 85, 51, 0.15);
+            box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.8), inset 0 0 40px rgba(255, 85, 51, 0.05);
+            box-sizing: border-box;
+            transition: opacity 0.8s ease;
+        }
+
+        /* Rejilla de píxeles digitales sutiles */
+        .hud-scanline-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(255, 85, 51, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 85, 51, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+            background-position: center;
+        }
+
+        /* Indicador de Grabación (REC) parpadeante superior derecho */
+        .hud-rec-indicator {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 10px;
+            color: #ff5533;
+            letter-spacing: 2px;
+            font-weight: 700;
+            text-shadow: 0 0 8px rgba(255, 85, 51, 0.6);
+            animation: blink 1.5s infinite;
+        }
+
+        /* Datos de telemetría superior izquierda con la marca ESDA */
+        .hud-system-status {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 9px;
+            color: rgba(255, 85, 51, 0.6);
+            letter-spacing: 1.5px;
+            font-weight: 500;
+            line-height: 1.6;
+        }
+
+        /* Leyenda de aterrizaje en la parte inferior */
+        .hud-landing-warning {
+            position: absolute;
+            bottom: 35px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 11px;
+            color: #ffffff;
+            letter-spacing: 4px;
+            font-weight: 500;
+            text-transform: uppercase;
+            text-align: center;
+            opacity: 0.8;
+            text-shadow: 0 0 10px rgba(255, 85, 51, 0.4);
+            transition: color 0.4s ease, text-shadow 0.4s ease;
+            width: 90%;
+        }
+
+        /* Esquinas HUD estilizadas */
+        .hud-corner {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-color: rgba(255, 85, 51, 0.4);
+            border-style: solid;
+        }
+        .top-left { top: 15px; left: 15px; border-width: 2px 0 0 2px; }
+        .top-right { top: 15px; right: 15px; border-width: 2px 2px 0 0; }
+        .bottom-left { bottom: 15px; left: 15px; border-width: 0 0 2px 2px; }
+        .bottom-right { bottom: 15px; right: 15px; border-width: 0 2px 2px 0; }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        /* Mira/Círculo interactivo de zona de aterrizaje */
+        .cursor-hint {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 3;
+            pointer-events: none;
+            border: 2px dashed rgba(255, 85, 51, 0.5);
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            opacity: 0;
+            transition: opacity 1.5s ease, border-color 0.3s ease, border-style 0.3s ease;
+            animation: radar 2.5s infinite linear;
+        }
+
+        /* Transición de carga atmosférica */
+        .fade-out-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #9c311a;
+            z-index: 10;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.8s ease-in;
+        }
+
+        /* Animación de radar base para la mira */
+        @keyframes radar {
+            0% {
+                transform: translate(-50%, -50%) scale(0.85);
+                opacity: 0;
+            }
+            50% {
+                opacity: 0.6;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 0;
+            }
+        }
+    </style>
+    <!-- Incluimos Three.js desde un CDN seguro -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+    <!-- Cabina de Telemetría HUD -->
+    <div class="hud-overlay" id="hud-panel">
+        <div class="hud-scanline-grid"></div>
+        <div class="hud-corner top-left"></div>
+        <div class="hud-corner top-right"></div>
+        <div class="hud-corner bottom-left"></div>
+        <div class="hud-corner bottom-right"></div>
+        
+        <div class="hud-rec-indicator">REC •</div>
+        <div class="hud-system-status">
+            TERM_ID: ESDA_NAV_01<br>
+            CAM_FEED: ACTIVE<br>
+            SYS_LOC: MA_ORBITAL_S1<br>
+            WVP_MATRIX: AUTO_CAL
+        </div>
+        <!-- El contenedor se inicia vacío para que no aparezca ningún texto inicial -->
+        <div class="hud-landing-warning" id="warning-text"></div>
+    </div>
+
+    <!-- Canvas de renderizado 3D -->
+    <canvas id="space-canvas"></canvas>
+    
+    <!-- Mira interactiva de designación de aterrizaje -->
+    <div id="planet-hint" class="cursor-hint"></div>
+
+    <!-- Capa de transición a rojo atmósfera al hacer clic -->
+    <div id="transition-overlay" class="fade-out-overlay"></div>
+
+    <script>
+        // --- INICIALIZACIÓN DE LA ESCENA ---
+        const scene = new THREE.Scene();
+        // Niebla espacial oscura para dar profundidad al viaje espacial
+        scene.fog = new THREE.FogExp2(0x010103, 0.008);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('space-canvas'), antialias: true });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.4;
+
+        // --- SISTEMA DE ESTRELLAS DE FONDO EXTRA BRILLANTES ---
+        const starsGeometry = new THREE.BufferGeometry();
+        const starsCount = 2000;
+        const starPositions = new Float32Array(starsCount * 3);
+        const starColors = new Float32Array(starsCount * 3);
+
+        for (let i = 0; i < starsCount * 3; i += 3) {
+            const u = Math.random();
+            const v = Math.random();
+            const theta = u * 2.0 * Math.PI;
+            const phi = Math.acos(2.0 * v - 1.0);
+            const r = 100 + Math.random() * 140;
+
+            starPositions[i] = r * Math.sin(phi) * Math.cos(theta);
+            starPositions[i+1] = r * Math.sin(phi) * Math.sin(theta);
+            starPositions[i+2] = r * Math.cos(phi);
+
+            // Colores muy vibrantes con destellos
+            const rand = Math.random();
+            if (rand > 0.8) {
+                starColors[i] = 0.85;   // Azuladas brillantes
+                starColors[i+1] = 0.95;
+                starColors[i+2] = 1.0;
+            } else if (rand > 0.6) {
+                starColors[i] = 1.0;    // Doradas brillantes
+                starColors[i+1] = 0.95;
+                starColors[i+2] = 0.8;
+            } else {
+                starColors[i] = 1.0;    // Blanco puro
+                starColors[i+1] = 1.0;
+                starColors[i+2] = 1.0;
+            }
+        }
+
+        starsGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+        starsGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+
+        const starsMaterial = new THREE.PointsMaterial({
+            size: 0.36,
+            sizeAttenuation: true,
+            transparent: true,
+            opacity: 1.0,
+            vertexColors: true
+        });
+        const starField = new THREE.Points(starsGeometry, starsMaterial);
+        scene.add(starField);
+
+
+        // --- SISTEMA VECTORIAL DE LÍNEAS WARP ---
+        const warpLinesCount = 150;
+        const warpLinesGeometry = new THREE.BufferGeometry();
+        const warpLinePositions = new Float32Array(warpLinesCount * 2 * 3); // 2 puntos por línea
+        const warpLineColors = new Float32Array(warpLinesCount * 2 * 3);
+
+        // Inicializamos los segmentos de las líneas hiperespaciales
+        for (let i = 0; i < warpLinesCount; i++) {
+            const index = i * 6;
+            
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 6 + Math.random() * 25;
+            const x = Math.sin(angle) * radius;
+            const y = Math.cos(angle) * radius;
+            const z = -50 - Math.random() * 100;
+
+            // Punto de inicio del segmento (atrás)
+            warpLinePositions[index] = x;
+            warpLinePositions[index + 1] = y;
+            warpLinePositions[index + 2] = z;
+
+            // Punto final del segmento (adelante)
+            warpLinePositions[index + 3] = x;
+            warpLinePositions[index + 4] = y;
+            warpLinePositions[index + 5] = z + 5;
+
+            // Colores correspondientes a las líneas de plasma
+            const isOrange = Math.random() > 0.4;
+            const r = isOrange ? 1.0 : 0.6;
+            const g = isOrange ? 0.35 : 0.8;
+            const b = isOrange ? 0.15 : 1.0;
+
+            warpLineColors[index] = r; warpLineColors[index+1] = g; warpLineColors[index+2] = b;
+            warpLineColors[index+3] = r; warpLineColors[index+4] = g; warpLineColors[index+5] = b;
+        }
+
+        warpLinesGeometry.setAttribute('position', new THREE.BufferAttribute(warpLinePositions, 3));
+        warpLinesGeometry.setAttribute('color', new THREE.BufferAttribute(warpLineColors, 3));
+
+        const warpLinesMaterial = new THREE.LineBasicMaterial({
+            vertexColors: true,
+            transparent: true,
+            opacity: 0, // Invisibles al inicio
+            blending: THREE.AdditiveBlending,
+            linewidth: 2
+        });
+
+        const warpLinesField = new THREE.LineSegments(warpLinesGeometry, warpLinesMaterial);
+        scene.add(warpLinesField);
+
+
+        // --- SISTEMA DINÁMICO SUTIL DE ESTRELLAS FUGACES Y COMETA ---
+        const maxShootingStars = 4;
+        const shootingStars = [];
+
+        // Geometría y material para las estelas de las estrellas fugaces
+        const shootingStarMaterial = new THREE.LineBasicMaterial({
+            color: 0xffd2b1,
+            transparent: true,
+            opacity: 0,
+            blending: THREE.AdditiveBlending
+        });
+
+        for (let i = 0; i < maxShootingStars; i++) {
+            const lineGeom = new THREE.BufferGeometry();
+            const pts = new Float32Array(6); 
+            lineGeom.setAttribute('position', new THREE.BufferAttribute(pts, 3));
+            
+            const line = new THREE.Line(lineGeom, shootingStarMaterial.clone());
+            scene.add(line);
+
+            shootingStars.push({
+                mesh: line,
+                active: false,
+                startX: 0, startY: 0, startZ: 0,
+                endX: 0, endY: 0, endZ: 0,
+                progress: 0,
+                speed: 0
+            });
+        }
+
+        function triggerShootingStar(star) {
+            star.startX = (Math.random() - 0.5) * 60;
+            star.startY = 15 + Math.random() * 20;
+            star.startZ = -15 - Math.random() * 30;
+
+            // Dirección inclinada descendente rápida y elegante
+            star.endX = star.startX - 15 - Math.random() * 15;
+            star.endY = star.startY - 15 - Math.random() * 15;
+            star.endZ = star.startZ + (Math.random() - 0.5) * 5;
+
+            star.progress = 0;
+            star.speed = 0.025 + Math.random() * 0.035;
+            star.active = true;
+            star.mesh.material.opacity = 0.8;
+            star.mesh.material.color.setHex(Math.random() > 0.5 ? 0xfff5ea : 0xff7744);
+        }
+
+        // --- SISTEMA DEL COMETA MAJESTUOSO SUTIL ---
+        const cometGeometry = new THREE.BufferGeometry();
+        const cometPoints = new Float32Array(15 * 3); // Estela degradada de 15 nodos
+        cometGeometry.setAttribute('position', new THREE.BufferAttribute(cometPoints, 3));
+
+        const cometMaterial = new THREE.LineBasicMaterial({
+            color: 0xffaa77,
+            transparent: true,
+            opacity: 0,
+            blending: THREE.AdditiveBlending,
+            linewidth: 2
+        });
+
+        const cometLine = new THREE.Line(cometGeometry, cometMaterial);
+        scene.add(cometLine);
+
+        const cometData = {
+            active: false,
+            x: 0, y: 0, z: 0,
+            dx: -0.05, dy: -0.02, dz: 0.01, // Órbita lenta, casi inmóvil
+            trail: Array(15).fill().map(() => new THREE.Vector3())
+        };
+
+        function triggerComet() {
+            cometData.x = 45;
+            cometData.y = 20;
+            cometData.z = -15;
+            cometData.active = true;
+            cometMaterial.opacity = 0.45; // Destello de fondo muy discreto
+
+            for(let i = 0; i < 15; i++) {
+                cometData.trail[i].set(cometData.x, cometData.y, cometData.z);
+            }
+        }
+
+        // Intervalo aleatorio para estrellas fugaces y cometas
+        setInterval(() => {
+            const inactiveStar = shootingStars.find(s => !s.active);
+            if (inactiveStar && Math.random() > 0.4) {
+                triggerShootingStar(inactiveStar);
+            }
+        }, 1500);
+
+        setInterval(() => {
+            if (!cometData.active && Math.random() > 0.5) {
+                triggerComet();
+            }
+        }, 11000);
+
+
+        // --- CREACIÓN DE PLANETAS DE FONDO ENCUADRADOS ---
+
+        const createBluePlanetTexture = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#0a2e6b';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#4fa4de';
+            for (let i = 0; i < 15; i++) {
+                ctx.beginPath();
+                ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 10 + Math.random() * 20, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            for (let i = 0; i < 8; i++) {
+                ctx.beginPath();
+                ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 15 + Math.random() * 25, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            return new THREE.CanvasTexture(canvas);
+        };
+
+        const createGasGiantTexture = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#c49564';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < canvas.height; i += 6) {
+                ctx.fillStyle = i % 12 === 0 ? '#8a562d' : '#edd2b1';
+                ctx.fillRect(0, i + Math.random() * 2, canvas.width, 3 + Math.random() * 4);
+            }
+            return new THREE.CanvasTexture(canvas);
+        };
+
+        // Planeta Azul - En la esquina superior derecha respecto a Marte (Fijado y Visible)
+        const bluePlanetGeometry = new THREE.SphereGeometry(0.28, 32, 32); 
+        const bluePlanetMaterial = new THREE.MeshStandardMaterial({
+            map: createBluePlanetTexture(),
+            roughness: 0.5,
+            metalness: 0.2,
+            emissive: new THREE.Color('#104eb0'),
+            emissiveIntensity: 1.6
+        });
+        const bluePlanet = new THREE.Mesh(bluePlanetGeometry, bluePlanetMaterial);
+        bluePlanet.position.set(5.5, 3.5, -8); 
+        scene.add(bluePlanet);
+
+        // Gigante Gaseoso - En la esquina inferior izquierda respecto a Marte (Mucho más lejano)
+        const gasPlanetGeometry = new THREE.SphereGeometry(0.18, 32, 32); 
+        const gasPlanetMaterial = new THREE.MeshStandardMaterial({
+            map: createGasGiantTexture(),
+            roughness: 0.6,
+            metalness: 0.1,
+            emissive: new THREE.Color('#66411a'),
+            emissiveIntensity: 1.8 
+        });
+        const gasPlanet = new THREE.Mesh(gasPlanetGeometry, gasPlanetMaterial);
+        gasPlanet.position.set(-18.0, -9.0, -45); 
+        scene.add(gasPlanet);
+
+
+        // --- CREACIÓN DE MARTE (SUPERFICIE SEAMLESS VERTICAL ORIGINAL) ---
+        const planetGeometry = new THREE.SphereGeometry(2.2, 64, 64);
+        
+        const createSeamlessMarsTexture = () => {
+            const canvas = document.createElement('canvas');
+            const width = 1024;
+            const height = 512;
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = '#9c311a';
+            ctx.fillRect(0, 0, width, height);
+
+            const colors = ['#b83d1d', '#7d2310', '#c25330', '#631d0e', '#8a2b16', '#a3361c'];
+
+            const drawSeamlessDetail = (x, y, r) => {
+                // Seleccionamos el color una sola vez por detalle para evitar costuras cromáticas
+                const colorDetail = colors[Math.floor(Math.random() * colors.length)];
+                
+                const drawCircle = (cx) => {
+                    const grad = ctx.createRadialGradient(cx, y, 0, cx, y, r);
+                    grad.addColorStop(0, colorDetail);
+                    grad.addColorStop(0.5, 'rgba(156, 49, 26, 0.4)');
+                    grad.addColorStop(1, 'transparent');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(cx, y, r, 0, Math.PI * 2);
+                    ctx.fill();
+                };
+
+                drawCircle(x);
+
+                // Envoltura horizontal exacta para la textura vertical
+                if (x - r < 0) {
+                    drawCircle(x + width);
+                }
+                if (x + r > width) {
+                    drawCircle(x - width);
+                }
+            };
+
+            for (let i = 0; i < 400; i++) {
+                const x = Math.random() * width;
+                const y = Math.random() * height;
+                const r = 25 + Math.random() * 75;
+                drawSeamlessDetail(x, y, r);
+            }
+
+            // [MÁSCARA HORIZONTAL ANTICOSTURA]
+            const edgeGrad = ctx.createLinearGradient(0, 0, width, 0);
+            edgeGrad.addColorStop(0, '#9c311a');
+            edgeGrad.addColorStop(0.04, 'transparent');
+            edgeGrad.addColorStop(0.96, 'transparent');
+            edgeGrad.addColorStop(1, '#9c311a');
+            ctx.save();
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = edgeGrad;
+            ctx.fillRect(0, 0, width, height);
+            ctx.restore();
+
+            // Casquete polar norte
+            const polarGrad = ctx.createLinearGradient(0, 0, 0, 80);
+            polarGrad.addColorStop(0, 'rgba(240, 245, 255, 0.85)');
+            polarGrad.addColorStop(1, 'transparent');
+            ctx.fillStyle = polarGrad;
+            ctx.fillRect(0, 0, width, 80);
+
+            // Casquete polar sur
+            const polarSouthGrad = ctx.createLinearGradient(0, height, 0, height - 50);
+            polarSouthGrad.addColorStop(0, 'rgba(235, 240, 255, 0.7)');
+            polarSouthGrad.addColorStop(1, 'transparent');
+            ctx.fillStyle = polarSouthGrad;
+            ctx.fillRect(0, height - 50, width, 50);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.ClampToEdgeWrapping; // Volver al wrap vertical original sin rotar
+            
+            // Desactivamos mipmaps para erradicar cualquier costura de filtrado de WebGL
+            texture.generateMipmaps = false;
+            texture.minFilter = THREE.LinearFilter;
+            
+            return texture;
+        };
+
+        const marsTexture = createSeamlessMarsTexture();
+
+        const planetMaterial = new THREE.MeshStandardMaterial({
+            map: marsTexture,
+            roughness: 0.85,
+            metalness: 0.05,
+            bumpScale: 0.08
+        });
+
+        const mars = new THREE.Mesh(planetGeometry, planetMaterial);
+        scene.add(mars);
+
+
+        // --- CAPA DE TORMENTAS DE POLVO (VERTICAL ORIGINAL) ---
+        const stormGeometry = new THREE.SphereGeometry(2.215, 64, 64);
+
+        const createSeamlessStormTexture = () => {
+            const canvas = document.createElement('canvas');
+            const width = 1024;
+            const height = 512;
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.clearRect(0, 0, width, height);
+
+            const drawStormBand = (x, y, rx, ry, opacity) => {
+                const drawEllipse = (cx) => {
+                    const grad = ctx.createRadialGradient(cx, y, 0, cx, y, rx);
+                    grad.addColorStop(0, `rgba(235, 150, 90, ${opacity})`);
+                    grad.addColorStop(0.5, `rgba(210, 110, 60, ${opacity * 0.5})`);
+                    grad.addColorStop(1, 'transparent');
+                    
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.save();
+                    ctx.translate(cx, y);
+                    ctx.scale(1, ry / rx);
+                    ctx.arc(0, 0, rx, 0, Math.PI * 2);
+                    ctx.restore();
+                    ctx.fill();
+                };
+
+                drawEllipse(x);
+                if (x - rx < 0) drawEllipse(x + width);
+                if (x + rx > width) drawEllipse(x - width);
+            };
+
+            for (let i = 0; i < 45; i++) {
+                const x = Math.random() * width;
+                const y = 100 + Math.random() * 312;
+                const rx = 80 + Math.random() * 150;
+                const ry = 25 + Math.random() * 50;
+                const opacity = 0.2 + Math.random() * 0.35;
+                drawStormBand(x, y, rx, ry, opacity);
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.ClampToEdgeWrapping;
+            
+            texture.generateMipmaps = false;
+            texture.minFilter = THREE.LinearFilter;
+            
+            return texture;
+        };
+
+        const stormTexture = createSeamlessStormTexture();
+        const stormMaterial = new THREE.MeshStandardMaterial({
+            map: stormTexture,
+            transparent: true,
+            opacity: 0.85,
+            roughness: 0.6,
+            metalness: 0.1,
+            blending: THREE.NormalBlending
+        });
+
+        const stormLayer = new THREE.Mesh(stormGeometry, stormMaterial);
+        scene.add(stormLayer);
+
+
+        // --- ATMÓSFERA EXTERIOR ---
+        const atmosphereGeometry = new THREE.SphereGeometry(2.26, 32, 32);
+        const atmosphereMaterial = new THREE.MeshBasicMaterial({
+            color: 0xff3a0c,
+            transparent: true,
+            opacity: 0.18,
+            side: THREE.BackSide
+        });
+        const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+        scene.add(atmosphere);
+
+        // --- CONFIGURACIÓN DE ILUMINACIÓN ESPACIAL ---
+        const ambientLight = new THREE.AmbientLight(0x220e0a, 0.85);
+        scene.add(ambientLight);
+
+        const sunLight = new THREE.DirectionalLight(0xfff5ea, 2.5);
+        sunLight.position.set(12, 4, 15);
+        scene.add(sunLight);
+
+        const fillLight = new THREE.DirectionalLight(0x2244aa, 0.45);
+        fillLight.position.set(-15, -5, -10);
+        scene.add(fillLight);
+
+        // --- SISTEMA DE VIAJE Y CONTROL DE ESTADOS ---
+        camera.position.set(0, 0, 85); 
+
+        let introFinished = false;
+        let isTransitioning = false;
+        let warpSpeed = 0.01; 
+
+        const targetZ = 5.2; 
+        const speedFactor = 0.007; 
+
+        const mouse = new THREE.Vector2();
+        const targetRotation = new THREE.Vector2();
+        const raycaster = new THREE.Raycaster();
+
+        // --- LÓGICA DE COORDENADAS PARA LA MIRA INTERACTIVA ---
+        const hintEl = document.getElementById('planet-hint');
+        const hudPanel = document.getElementById('hud-panel');
+        const warningText = document.getElementById('warning-text');
+        
+        let hintX = window.innerWidth / 2;
+        let hintY = window.innerHeight / 2;
+        let targetHintX = window.innerWidth / 2;
+        let targetHintY = window.innerHeight / 2;
+        let isHoveringPlanet = false;
+        let systemsArmed = false; 
+
+
+        // --- SINTETIZADOR DE MÚSICA Y AMBIENTE DE NAVE ESPACIAL ---
+        let audioCtx = null;
+        let masterGain = null;
+        let musicStarted = false;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioCtx;
+        }
+
+        function startSpaceMusic() {
+            if (musicStarted) return; 
+
+            const ctxAudio = getAudioContext();
+            masterGain = ctxAudio.createGain();
+            masterGain.gain.setValueAtTime(0.0, ctxAudio.currentTime);
+            masterGain.gain.linearRampToValueAtTime(0.25, ctxAudio.currentTime + 2.5);
+            masterGain.connect(ctxAudio.destination);
+
+            // Zumbido de cabina / Motores auxiliares
+            const engineOsc = ctxAudio.createOscillator();
+            const cabinOsc = ctxAudio.createOscillator();
+            const cabinFilter = ctxAudio.createBiquadFilter();
+
+            engineOsc.type = 'triangle';
+            engineOsc.frequency.setValueAtTime(38.0, ctxAudio.currentTime); 
+
+            cabinOsc.type = 'sawtooth';
+            cabinOsc.frequency.setValueAtTime(80.0, ctxAudio.currentTime); 
+
+            cabinFilter.type = 'lowpass';
+            cabinFilter.frequency.setValueAtTime(95, ctxAudio.currentTime); 
+
+            const engineGain = ctxAudio.createGain();
+            engineGain.gain.setValueAtTime(0.06, ctxAudio.currentTime); 
+
+            engineOsc.connect(cabinFilter);
+            cabinOsc.connect(cabinFilter);
+            cabinFilter.connect(engineGain);
+            engineGain.connect(masterGain);
+
+            engineOsc.start();
+            cabinOsc.start();
+
+            // Ruido blanco filtrado (Flujo de aire)
+            const bufferSize = ctxAudio.sampleRate * 2;
+            const noiseBuffer = ctxAudio.createBuffer(1, bufferSize, ctxAudio.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+            const whiteNoise = ctxAudio.createBufferSource();
+            whiteNoise.buffer = noiseBuffer;
+            whiteNoise.loop = true;
+
+            const airFilter = ctxAudio.createBiquadFilter();
+            airFilter.type = 'bandpass';
+            airFilter.frequency.setValueAtTime(260, ctxAudio.currentTime);
+            airFilter.Q.setValueAtTime(1.1, ctxAudio.currentTime);
+
+            const airGain = ctxAudio.createGain();
+            airGain.gain.setValueAtTime(0.08, ctxAudio.currentTime); 
+
+            whiteNoise.connect(airFilter);
+            airFilter.connect(airGain);
+            airGain.connect(masterGain);
+            whiteNoise.start();
+
+            // Drone cósmico modulado
+            const baseDrone = ctxAudio.createOscillator();
+            const droneFilter = ctxAudio.createBiquadFilter();
+
+            baseDrone.type = 'sine';
+            baseDrone.frequency.setValueAtTime(110.0, ctxAudio.currentTime); 
+
+            droneFilter.type = 'lowpass';
+            droneFilter.frequency.setValueAtTime(130, ctxAudio.currentTime);
+
+            const droneGain = ctxAudio.createGain();
+            droneGain.gain.setValueAtTime(0.12, ctxAudio.currentTime); 
+
+            const lfo = ctxAudio.createOscillator();
+            const lfoGain = ctxAudio.createGain();
+            lfo.frequency.value = 0.05; 
+            lfoGain.gain.value = 50;
+
+            lfo.connect(lfoGain);
+            lfoGain.connect(droneFilter.frequency);
+
+            baseDrone.connect(droneFilter);
+            droneFilter.connect(droneGain);
+            droneGain.connect(masterGain);
+
+            baseDrone.start();
+            lfo.start();
+
+            // Pitidos de consola de soporte de telemetría (Spaceship Console)
+            function playConsoleTelemetry() {
+                if (isTransitioning) return; 
+
+                const pingOsc = ctxAudio.createOscillator();
+                const pingGain = ctxAudio.createGain();
+
+                const isClick = Math.random() > 0.6;
+                pingOsc.type = 'sine';
+                
+                if (isClick) {
+                    pingOsc.frequency.setValueAtTime(135, ctxAudio.currentTime);
+                    pingGain.gain.setValueAtTime(0.0, ctxAudio.currentTime);
+                    pingGain.gain.linearRampToValueAtTime(0.06, ctxAudio.currentTime + 0.01); 
+                    pingGain.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + 0.08);
+                } else {
+                    const freqs = [1800, 2200, 2500, 2900, 3200];
+                    const randomFreq = freqs[Math.floor(Math.random() * freqs.length)];
+                    pingOsc.frequency.setValueAtTime(randomFreq, ctxAudio.currentTime);
+                    
+                    pingGain.gain.setValueAtTime(0.0, ctxAudio.currentTime);
+                    pingGain.gain.linearRampToValueAtTime(0.02, ctxAudio.currentTime + 0.02); 
+                    pingGain.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + 0.4);
+                }
+
+                pingOsc.connect(pingGain);
+                pingGain.connect(masterGain);
+
+                pingOsc.start();
+                pingOsc.stop(ctxAudio.currentTime + 0.5);
+            }
+
+            setInterval(() => {
+                const repetitions = Math.floor(Math.random() * 4) + 1; 
+                for (let i = 0; i < repetitions; i++) {
+                    setTimeout(playConsoleTelemetry, i * 140);
+                }
+            }, 2200);
+
+            // Destellos armónicos
+            const notes = [440, 493.88, 554.37, 659.25, 739.99, 880]; 
+
+            function playSpaceSparkle() {
+                if (isTransitioning) return; 
+
+                const sparkleOsc = ctxAudio.createOscillator();
+                const sparkleGain = ctxAudio.createGain();
+                const sparkleFilter = ctxAudio.createBiquadFilter();
+
+                sparkleOsc.type = 'sine';
+                const randomNote = notes[Math.floor(Math.random() * notes.length)] * 2;
+                sparkleOsc.frequency.setValueAtTime(randomNote, ctxAudio.currentTime);
+
+                sparkleFilter.type = 'bandpass';
+                sparkleFilter.frequency.setValueAtTime(1200, ctxAudio.currentTime);
+
+                sparkleGain.gain.setValueAtTime(0.0, ctxAudio.currentTime);
+                sparkleGain.gain.linearRampToValueAtTime(0.03, ctxAudio.currentTime + 1.5); 
+                sparkleGain.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + 6.0); 
+
+                sparkleOsc.connect(sparkleFilter);
+                sparkleFilter.connect(sparkleGain);
+                sparkleGain.connect(masterGain);
+
+                sparkleOsc.start();
+                sparkleOsc.stop(ctxAudio.currentTime + 6.1);
+            }
+
+            setInterval(playSpaceSparkle, 4200);
+
+            musicStarted = true;
+        }
+
+        // --- REPRODUCCIÓN FÍSICA DE BIP DE INTERFAZ ---
+        function playClickSound() {
+            const ctxAudio = getAudioContext();
+            if (!ctxAudio) return;
+
+            const osc = ctxAudio.createOscillator();
+            const gainNode = ctxAudio.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(580, ctxAudio.currentTime); 
+
+            gainNode.gain.setValueAtTime(0.0, ctxAudio.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.05, ctxAudio.currentTime + 0.01);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + 0.25);
+
+            osc.connect(gainNode);
+            gainNode.connect(ctxAudio.destination);
+
+            osc.start();
+            osc.stop(ctxAudio.currentTime + 0.3);
+        }
+
+        // --- BUCLE DE ANIMACIÓN (LOOP) ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (!isTransitioning) {
+                // Rotaciones normales
+                mars.rotation.y += 0.0016;
+                stormLayer.rotation.y -= 0.0028;
+                stormLayer.rotation.x = Math.sin(Date.now() * 0.0001) * 0.03;
+
+                atmosphere.rotation.y += 0.0016;
+                
+                bluePlanet.rotation.y += 0.0012;
+                gasPlanet.rotation.y -= 0.0009;
+                starField.rotation.y += 0.00008;
+
+                // Estrellas fugaces
+                shootingStars.forEach(s => {
+                    if (s.active) {
+                        s.progress += s.speed;
+                        
+                        const x = THREE.MathUtils.lerp(s.startX, s.endX, s.progress);
+                        const y = THREE.MathUtils.lerp(s.startY, s.endY, s.progress);
+                        const z = THREE.MathUtils.lerp(s.startZ, s.endZ, s.progress);
+
+                        const prevProgress = Math.max(0, s.progress - 0.08);
+                        const px = THREE.MathUtils.lerp(s.startX, s.endX, prevProgress);
+                        const py = THREE.MathUtils.lerp(s.startY, s.endY, prevProgress);
+                        const pz = THREE.MathUtils.lerp(s.startZ, s.endZ, prevProgress);
+
+                        const positions = s.mesh.geometry.attributes.position.array;
+                        positions[0] = px; positions[1] = py; positions[2] = pz;
+                        positions[3] = x;  positions[4] = y;  positions[5] = z;
+                        s.mesh.geometry.attributes.position.needsUpdate = true;
+
+                        if (s.progress >= 1.0) {
+                            s.mesh.material.opacity -= 0.08;
+                            if (s.mesh.material.opacity <= 0) {
+                                s.active = false;
+                            }
+                        }
+                    }
+                });
+
+                // Cometa
+                if (cometData.active) {
+                    cometData.x += cometData.dx;
+                    cometData.y += cometData.dy;
+                    cometData.z += cometData.dz;
+
+                    cometData.trail.unshift(new THREE.Vector3(cometData.x, cometData.y, cometData.z));
+                    cometData.trail.pop();
+
+                    const positions = cometLine.geometry.attributes.position.array;
+                    for(let i = 0; i < 15; i++) {
+                        positions[i*3] = cometData.trail[i].x;
+                        positions[i*3+1] = cometData.trail[i].y;
+                        positions[i*3+2] = cometData.trail[i].z;
+                    }
+                    cometLine.geometry.attributes.position.needsUpdate = true;
+
+                    if (cometData.x < -45) {
+                        cometData.active = false;
+                        cometMaterial.opacity = 0;
+                    }
+                }
+
+                if (!introFinished) {
+                    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, speedFactor);
+                    mars.rotation.y += (targetZ / camera.position.z) * 0.003;
+
+                    if (Math.abs(camera.position.z - targetZ) < 0.05) {
+                        camera.position.z = targetZ;
+                        introFinished = true;
+                        hintEl.style.opacity = '1';
+                    }
+                } else {
+                    mars.rotation.x = THREE.MathUtils.lerp(mars.rotation.x, targetRotation.y * 0.12, 0.05);
+                    stormLayer.rotation.x = THREE.MathUtils.lerp(stormLayer.rotation.x, targetRotation.y * 0.12, 0.05);
+
+                    raycaster.setFromCamera(mouse, camera);
+                    const intersects = raycaster.intersectObjects([mars, stormLayer]);
+
+                    isHoveringPlanet = intersects.length > 0;
+
+                    if (isHoveringPlanet) {
+                        hintX = THREE.MathUtils.lerp(hintX, targetHintX, 0.15);
+                        hintY = THREE.MathUtils.lerp(hintY, targetHintY, 0.15);
+                        hintEl.style.borderColor = 'rgba(255, 120, 50, 0.85)';
+                        hintEl.style.borderStyle = 'solid'; 
+                    } else {
+                        hintX = THREE.MathUtils.lerp(hintX, window.innerWidth / 2, 0.15);
+                        hintY = THREE.MathUtils.lerp(hintY, window.innerHeight / 2, 0.15);
+                        hintEl.style.borderColor = 'rgba(255, 85, 51, 0.5)';
+                        hintEl.style.borderStyle = 'dashed'; 
+                    }
+
+                    hintEl.style.left = `${hintX}px`;
+                    hintEl.style.top = `${hintY}px`;
+                }
+            } else {
+                // --- EFECTO ACELERACIÓN WARP SUAVE Y ALTAMENTE SUTIL (SIN EXAGERACIONES NI TEMBLORES) ---
+                warpSpeed += 0.035; // Aceleración suave y moderada (antes 0.065)
+
+                // 1. Distorsión de lente sutil y progresiva (sin sacudidas en FOV)
+                camera.fov = THREE.MathUtils.lerp(camera.fov, 115, 0.04); // FOV controlado y armónico
+                camera.updateProjectionMatrix();
+
+                // 2. Desplazamiento lineal perfecto y suave de la cámara (sin sacudidas físicas en X o Y)
+                camera.position.z = Math.max(2.22, camera.position.z - warpSpeed);
+                camera.position.x = THREE.MathUtils.lerp(camera.position.x, 0, 0.1);
+                camera.position.y = THREE.MathUtils.lerp(camera.position.y, 0, 0.1);
+
+                // 3. Neblina roja suave de Marte incrementándose progresivamente
+                scene.fog.color.setHex(0x9c311a);
+                scene.fog.density = THREE.MathUtils.lerp(scene.fog.density, 1.25, 0.04); 
+
+                // 4. Giro sutil y controlado de los astros
+                mars.rotation.y += 0.045;
+                stormLayer.rotation.y -= 0.055;
+
+                // 5. Desvanecimiento suave y pausado de las estrellas fijas
+                starField.material.opacity = THREE.MathUtils.lerp(starField.material.opacity, 0.05, 0.06);
+
+                // 6. Activación e incremento de brillo sutil de las líneas vectoriales hiperespaciales
+                warpLinesMaterial.opacity = THREE.MathUtils.lerp(warpLinesMaterial.opacity, 0.55, 0.06);
+
+                // 7. Estiramiento físico muy suave de las líneas vectoriales
+                const linePositions = warpLinesField.geometry.attributes.position.array;
+                for (let i = 0; i < linePositions.length; i += 6) {
+                    linePositions[i + 2] += warpSpeed * 6.5; 
+                    linePositions[i + 5] += warpSpeed * 6.5; 
+
+                    const lineLength = warpSpeed * 12.0; 
+                    linePositions[i + 5] = linePositions[i + 2] + lineLength;
+
+                    if (linePositions[i + 2] > 20) {
+                        linePositions[i + 2] = -150;
+                        linePositions[i + 5] = -150 + lineLength;
+                    }
+                }
+                warpLinesField.geometry.attributes.position.needsUpdate = true;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // --- EVENTOS E INTERACTIVIDAD ---
+
+        window.addEventListener('mousemove', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            targetRotation.x = mouse.x;
+            targetRotation.y = -mouse.y;
+
+            targetHintX = event.clientX;
+            targetHintY = event.clientY;
+        });
+
+        // Evento click unificado de doble fase (Armar sistemas / Iniciar viaje)
+        window.addEventListener('click', (event) => {
+            // Fase 1: Primer Clic para armar sistemas de audio y cabina
+            if (!systemsArmed) {
+                const ctxAudio = getAudioContext();
+                if (ctxAudio.state === 'suspended') {
+                    ctxAudio.resume();
+                }
+                startSpaceMusic();
+                systemsArmed = true;
+                
+                // Pitido físico táctico al hacer clic
+                playClickSound();
+                
+                // Generación dinámica y exclusiva del texto tras el primer clic
+                warningText.innerHTML = "todo preparado para el amartizaje";
+                warningText.style.color = "#ff5533";
+                warningText.style.textShadow = "0 0 12px rgba(255, 85, 51, 0.8)";
+                return; 
+            }
+
+            // Fase 2: Segundo clic - Validación del aterrizaje
+            if (!introFinished || isTransitioning) return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects([mars, stormLayer]);
+
+            if (intersects.length > 0) {
+                isTransitioning = true;
+
+                // Pitido físico de confirmación de aterrizaje
+                playClickSound();
+
+                // Apagamos la mira telescópica y el panel HUD
+                hintEl.style.opacity = '0';
+                hudPanel.style.opacity = '0';
+
+                // Desvanecimiento de volumen
+                if (masterGain) {
+                    masterGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.8);
+                }
+
+                document.getElementById('transition-overlay').style.opacity = '1';
+
+                setTimeout(() => {
+                    window.location.href = "galeria.html";
+                }, 1000); 
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            if (!isHoveringPlanet) {
+                targetHintX = window.innerWidth / 2;
+                targetHintY = window.innerHeight / 2;
+            }
+        });
+    </script>
+</body>
+</html>
