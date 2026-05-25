@@ -876,7 +876,7 @@
             { id: 15, student: "Marina Buil", title: "Generador de Campo Magnético", desc: "Estructura de bobinas superconductoras gigantes para restaurar la magnetosfera marciana. Animación de destellos de plasma por composición.", class: "2º DG", group: "Grupo B", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
             { id: 16, student: "Michelle Vela", title: "El recorrido del hielo en Marte", desc: "Este proyecto ha buscado crear un entorno que si bien está inspirado en el planeta rojo, plantea un escenario diferente al que solemos imaginarnos. Con el pretexto de que se han encontrado indicios de la existencia de agua helada bajo el suelo de Marte, el eje de la animación se centra en mostrar una version de esta hipótesis, claramente inspirada e influenciada por la ciencia ficción. Por ello, lo que observamos, aparte de especies de plantas aliení­genas y formaciones rocosas de formas extrañas, es un gran rí­o de hielo. Este no sigue las leyes fí­sicas o quí­micas de nuestro planeta, y acaba formando esferas que se elevan hacia el cielo y desembocan en un gran lago. ", class: "2º DG", group: "Grupo C", videoId: "1oi6maskOayEdoypr17dYPJaWJ242s_3R" },
             { id: 17, student: "Miriam Serrano", title: "Extractor de Mineral de Hierro", desc: "Excavadora rotativa gigante optimizada para las llanuras ricas en hematita. Rigging complejo de engranajes y cilindros hidráulicos.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
-            { id: 18, student: "Pablo Marí­n", title: "Módulo Habitacional de Tripulación", desc: "Diseño ergonómico de los domos residenciales de los colonos. Modelado exhaustivo de interiores y mobiliario functional optimizado.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 18, student: "Pablo Marí­n", title: "Módulo Habitacional de Tripulación", desc: "Diseño ergonómico de los domos residenciales de los colonos. Modelado boastful de interiores y de mobiliario functional optimizado.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
             { id: 19, student: "Pilar Gormedino", title: "Cúpula Meteorológica", desc: "Estación equipada con radares y barómetros de precisión. Materiales reflectantes de vidrio térmico y animación de radares giratorios.", class: "2º DG", group: "Grupo C", videoId: "1b3HwF4fDfIhCR7S01v_Q-BmMCfCftKqt" },
             { id: 20, student: "Sara Gentil", title: "El viaje de la idea", desc: "Se trata de un recorrido que hace una bola 'la idea' a través de arquitecturas surrealistas sobre un lago en Marte. La bola asciende por escaleras y cruza arcos de manera fluida, simbolizando el proceso creativo hasta que aterriza y se asienta como punto de Diseña Fest. Completando la identidad.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
             { id: 21, student: "Sara Tejeda", title: "Estación de Carga de Rovers", desc: "Plataforma de abastecimiento energético automatizado por inducción. Iluminación interactiva de recarga de batería mediante nodos.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
@@ -1019,12 +1019,16 @@
                 const gc = gasClouds[i];
                 
                 const grad = canvasCtx.createRadialGradient(gc.x, gc.y, 0, gc.x, gc.y, gc.radius);
-                const op = isDayMode ? gc.opacity * 0.45 : gc.opacity; 
+                
+                // MULTIPLICADORES DE CONTRASTE OPTIMIZADOS PARA MÁXIMA VISIBILIDAD
+                // Aumentamos considerablemente los multiplicadores base (en modo día a 2.4 y en modo noche a 1.6)
+                const op = isDayMode ? gc.opacity * 2.4 : gc.opacity * 1.6; 
                 
                 // Mapeo dinámico de gas de naranja a azul eléctrico en modo día
                 let activeColor = gc.color;
                 if (isDayMode) {
-                    activeColor = gc.color.includes('235') ? 'rgba(0, 102, 255, ' : 'rgba(0, 150, 255, ';
+                    // Colores de plasma diurnos más profundos (azul eléctrico y zafiro oscuro) para mayor peso visual
+                    activeColor = gc.color.includes('235') ? 'rgba(0, 82, 255, ' : 'rgba(0, 120, 255, ';
                 }
                 
                 grad.addColorStop(0, `${activeColor}${op})`);
@@ -1053,12 +1057,13 @@
                 canvasCtx.beginPath();
                 canvasCtx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
                 
-                const alphaVal = isDayMode ? s.alpha * 0.75 : s.alpha;
+                // Incrementamos la opacidad de los destellos/chispas estelares (1.2 en modo día, 1.0 en modo noche)
+                const alphaVal = isDayMode ? s.alpha * 1.2 : s.alpha;
                 
-                // Mapeo dinámico de chispas a azul eléctrico en modo diurno
+                // Mapeo dinámico de chispas a azul eléctrico y cyan en modo diurno
                 let activeColor = s.color;
                 if (isDayMode) {
-                    activeColor = s.color.includes('85') ? 'rgba(0, 82, 255, ' : 'rgba(0, 200, 255, ';
+                    activeColor = s.color.includes('85') ? 'rgba(0, 82, 255, ' : 'rgba(0, 190, 255, ';
                 }
                 
                 canvasCtx.fillStyle = `${activeColor}${alphaVal})`;
