@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html><!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -150,55 +150,24 @@
             50% { opacity: 0; }
         }
 
-        /* --- MIRA INTERACTIVA DE DESIGNACIÓN DE ATERRIZAJE --- */
-        /* Contenedor espacial para el movimiento de telemetría */
-        .cursor-hint-container {
+        /* Mira/Círculo interactivo de zona de aterrizaje */
+        .cursor-hint {
             position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             z-index: 3;
             pointer-events: none;
+            border: 2px dashed rgba(255, 85, 51, 0.5);
+            border-radius: 50%;
             width: 120px;
             height: 120px;
             opacity: 0;
-            transform: translate(-50%, -50%) scale(1);
-            transition: opacity 1.5s ease, transform 0.3s ease;
-        }
-
-        /* Efecto locked al hacer hover sobre Marte */
-        .cursor-hint-container.locked {
-            transform: translate(-50%, -50%) scale(1.1);
-        }
-
-        /* Elemento interno que realiza la fluctuación radar constante */
-        .cursor-hint-radar {
-            width: 100%;
-            height: 100%;
-            border: 2px dashed rgba(255, 85, 51, 0.5);
-            border-radius: 50%;
+            transition: opacity 1.5s ease, border-color 0.3s ease, border-style 0.3s ease, transform 0.3s ease;
             animation: radar 2.5s infinite linear;
-            transition: border-color 0.3s ease, border-style 0.3s ease;
         }
 
-        .cursor-hint-container.locked .cursor-hint-radar {
-            border-color: #ff3a0c;
-            border-style: solid;
-        }
-
-        /* Animación de radar pulsante */
-        @keyframes radar {
-            0% {
-                transform: scale(0.85);
-                opacity: 0;
-            }
-            50% {
-                opacity: 0.6;
-            }
-            100% {
-                transform: scale(1.25);
-                opacity: 0;
-            }
-        }
-
-        /* Transición de carga atmospheric */
+        /* Transición de carga atmosférica */
         .fade-out-overlay {
             position: fixed;
             top: 0;
@@ -499,10 +468,8 @@
         </div>
     </div>
     
-    <!-- Mira interactiva de designación de aterrizaje adaptada para fluctuación constante -->
-    <div id="planet-hint" class="cursor-hint-container">
-        <div class="cursor-hint-radar"></div>
-    </div>
+    <!-- Mira interactiva de designación de aterrizaje -->
+    <div id="planet-hint" class="cursor-hint"></div>
 
     <!-- Capa de transición a rojo atmósfera al hacer clic -->
     <div id="transition-overlay" class="fade-out-overlay"></div>
@@ -977,7 +944,7 @@
         let warpSpeed = 0.01; 
 
         const targetZ = 5.2; 
-        const speedFactor = 0.035; // CLAVE: Incrementado de 0.007 a 0.035 para una aproximación ágil y moderna
+        const speedFactor = 0.007; 
 
         const mouse = new THREE.Vector2();
         const targetRotation = new THREE.Vector2();
@@ -1471,9 +1438,9 @@
                     if (isHoveringPlanet) {
                         hintX = THREE.MathUtils.lerp(hintX, targetHintX, 0.15);
                         hintY = THREE.MathUtils.lerp(hintY, targetHintY, 0.15);
-                        
-                        // CLAVE: Añadimos la clase locked en vez de aplicar estilos inline transform destructores
-                        hintEl.classList.add('locked');
+                        hintEl.style.borderColor = '#ff3a0c';
+                        hintEl.style.borderStyle = 'solid'; 
+                        hintEl.style.transform = 'translate(-50%, -50%) scale(1.1)';
 
                         // Feedback activo de escáner en el HUD
                         scannerText.innerHTML = `
@@ -1494,9 +1461,9 @@
                     } else {
                         hintX = THREE.MathUtils.lerp(hintX, window.innerWidth / 2, 0.15);
                         hintY = THREE.MathUtils.lerp(hintY, window.innerHeight / 2, 0.15);
-                        
-                        // CLAVE: Retiramos la clase locked para que el radar vuelva a ser dashed/naranja
-                        hintEl.classList.remove('locked');
+                        hintEl.style.borderColor = 'rgba(255, 85, 51, 0.5)';
+                        hintEl.style.borderStyle = 'dashed'; 
+                        hintEl.style.transform = 'translate(-50%, -50%) scale(1.0)';
 
                         scannerText.innerHTML = `
                             SCANNER: STANDBY<br>
@@ -1612,10 +1579,11 @@
                 return; 
             }
 
-            // CLAVE DE RESOLUCIÓN: Eliminamos el bloqueo de introFinished para permitir un amartizaje inmediato
-            if (isTransitioning) return;
+            if (!introFinished || isTransitioning) return;
 
-            // Para evitar problemas de lag y clics simulados en navegadores móviles, usamos las coordenadas de telemetría de precisión guardadas en "mouse"
+            // CLAVE EXTRAÍDA: Para evitar que coordenadas "click" simuladas y con lag de navegadores móviles
+            // sobreescriban a (0, 0) o causen desvíos imprecisos, prescindimos de resetear mouse.x/y con event.clientX/Y.
+            // Utilizamos el vector 'mouse' global, el cual es guardado con precisión milimétrica mediante pointermove y pointerdown.
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects([mars, stormLayer]);
 
