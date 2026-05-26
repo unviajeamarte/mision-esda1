@@ -206,7 +206,7 @@
             letter-spacing: 2px;
             font-weight: 700;
             cursor: pointer;
-            box-shadow: 0 0 10px rgba(255, 85, 51, 0.05);
+            box-shadow: 0 0 100px rgba(255, 85, 51, 0.05);
             transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
             display: flex;
             align-items: center;
@@ -1548,6 +1548,12 @@
         window.addEventListener('pointerdown', (event) => {
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            targetRotation.x = mouse.x;
+            targetRotation.y = -mouse.y;
+
+            targetHintX = event.clientX;
+            targetHintY = event.clientY;
         });
 
         // Evento click unificado de doble fase (Armar sistemas / Iniciar viaje)
@@ -1575,14 +1581,13 @@
 
             if (!introFinished || isTransitioning) return;
 
-            // Recalculamos de forma robusta la colisión en base al puntero actual de click/touch
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
+            // CLAVE EXTRAÍDA: Para evitar que coordenadas "click" simuladas y con lag de navegadores móviles
+            // sobreescriban a (0, 0) o causen desvíos imprecisos, prescindimos de resetear mouse.x/y con event.clientX/Y.
+            // Utilizamos el vector 'mouse' global, el cual es guardado con precisión milimétrica mediante pointermove y pointerdown.
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects([mars, stormLayer]);
 
-            // CLAVE DE RESOLUCIÓN: Si colisiona directamente o si el bucle principal de renderizado ya ha confirmado hover (isHoveringPlanet)
+            // Si colisiona directamente o si el bucle principal de renderizado ya ha confirmado hover (isHoveringPlanet)
             if (intersects.length > 0 || isHoveringPlanet) {
                 isTransitioning = true;
 
