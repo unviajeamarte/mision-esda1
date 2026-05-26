@@ -206,6 +206,7 @@
             gap: 12px;
             top: 150px;
             left: 30px;
+            transition: opacity 0.8s ease; /* Transición añadida para ocultarlo suavemente */
         }
 
         /* Estilo base del botón HUD de la consola */
@@ -436,9 +437,9 @@
 
         <!-- Coordenadas vivas en tiempo real -->
         <div class="hud-telemetry-coordinates" id="coords-text">
-            LAT: 12° 24' 18" S<br>
-            LON: 34° 56' 02" E<br>
-            ALT: 421.85 km
+            LAT: 12° 24' ${latSeconds}" S<br>
+            LON: 34° 56' ${lonSeconds}" E<br>
+            ALT: ${altitude} km
         </div>
 
         <!-- Feedback del analizador de atmósfera -->
@@ -452,7 +453,7 @@
     </div>
 
     <!-- CONTENEDOR HUD DE INTERACTIVOS (Clicks habilitados para el usuario) -->
-    <div class="hud-interactive-container">
+    <div class="hud-interactive-container" id="hud-interactive">
         <!-- Botón del Minijuego de Defensa -->
         <button class="btn-hud-control" id="btn-open-arcade">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -479,25 +480,6 @@
                 TRACKING: OFF_RANGE<br>
                 COORDS: --° --' N / --° --' E
             </div>
-        </div>
-    </div>
-
-    <!-- ARCADE DE COMBATE DE 8 BITS (CANVAS JUEGO DE MARCIANOS) -->
-    <div class="holo-game-frame" id="holo-frame">
-        <div class="holo-game-header">
-            <span>MARS_ARCADE_v1.0.EXE</span>
-            <button class="holo-game-close" id="btn-close-arcade">CERRAR [X]</button>
-        </div>
-        <div class="game-canvas-container">
-            <canvas id="arcade-canvas" width="400" height="240"></canvas>
-        </div>
-        <div class="game-controls-info">
-            TECLADO: [A/D] o [←/→] Mover - [ESPACIO] Disparar
-        </div>
-        <div class="mobile-buttons-bar">
-            <button class="mobile-btn" id="m-btn-left">◄ IZQUIERDA</button>
-            <button class="mobile-btn" id="m-btn-fire">¡FUEGO! 🔥</button>
-            <button class="mobile-btn" id="m-btn-right">DERECHA ►</button>
         </div>
     </div>
     
@@ -590,13 +572,9 @@
             warpLinePositions[index + 4] = y;
             warpLinePositions[index + 5] = z + 5;
 
-            const isOrange = Math.random() > 0.4;
-            const r = isOrange ? 1.0 : 0.6;
-            const g = isOrange ? 0.35 : 0.8;
-            const b = isOrange ? 0.15 : 1.0;
-
-            warpLineColors[index] = r; warpLineColors[index+1] = g; warpLineColors[index+2] = b;
-            warpLineColors[index+3] = r; warpLineColors[index+4] = g; warpLineColors[index+5] = b;
+            // CLAVE: Las líneas del Warp ahora se configuran en color blanco puro brillante
+            warpLineColors[index] = 1.0; warpLineColors[index+1] = 1.0; warpLineColors[index+2] = 1.0;
+            warpLineColors[index+3] = 1.0; warpLineColors[index+4] = 1.0; warpLineColors[index+5] = 1.0;
         }
 
         warpLinesGeometry.setAttribute('position', new THREE.BufferAttribute(warpLinePositions, 3));
@@ -1145,7 +1123,7 @@
 
                 sparkleOsc.connect(sparkleFilter);
                 sparkleFilter.connect(sparkleGain);
-                sparkleGain.connect(masterGain);
+                sparkleFilter.connect(masterGain);
 
                 sparkleOsc.start();
                 sparkleOsc.stop(ctxAudio.currentTime + 6.1);
@@ -1189,30 +1167,44 @@
             };
         }
 
+        // --- SISTEMA DE SINTETIZADOR DE AMARTIZAJE (IGNICIÓN Y SUBIDAS DE POTENCIA) ---
+        // CLAVE: El sonido simula de forma espectacular unos motores que ganan potencia (frecuencia y ganancia ascendente)
         function playWarpSound() {
             const ctxAudio = getAudioContext();
             if (!ctxAudio) return;
 
             const osc = ctxAudio.createOscillator();
+            const subOsc = ctxAudio.createOscillator();
             const gainNode = ctxAudio.createGain();
 
             osc.type = 'sawtooth';
-            // Frecuencia inicial alta que desciende rápidamente simulando el impulso
-            osc.frequency.setValueAtTime(880, ctxAudio.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(80, ctxAudio.currentTime + 0.95);
+            subOsc.type = 'triangle';
 
-            gainNode.gain.setValueAtTime(0.0, ctxAudio.currentTime);
-            gainNode.gain.linearRampToValueAtTime(0.12, ctxAudio.currentTime + 0.05);
+            // Frecuencias ascendentes para emular motores acelerando a fondo (ignición)
+            osc.frequency.setValueAtTime(60, ctxAudio.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(950, ctxAudio.currentTime + 0.95);
+
+            subOsc.frequency.setValueAtTime(35, ctxAudio.currentTime);
+            subOsc.frequency.exponentialRampToValueAtTime(240, ctxAudio.currentTime + 0.95);
+
+            // Aumento de ganancia progresivo (acumulando energía de propulsor)
+            gainNode.gain.setValueAtTime(0.001, ctxAudio.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.18, ctxAudio.currentTime + 0.75);
             gainNode.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + 0.98);
 
             osc.connect(gainNode);
+            subOsc.connect(gainNode);
             gainNode.connect(ctxAudio.destination);
 
             osc.start();
+            subOsc.start();
+            
             osc.stop(ctxAudio.currentTime + 1.0);
+            subOsc.stop(ctxAudio.currentTime + 1.0);
 
             osc.onended = () => {
                 osc.disconnect();
+                subOsc.disconnect();
                 gainNode.disconnect();
             };
         }
@@ -1233,7 +1225,7 @@
         }, 800);
 
 
-        // --- 🗺️ NUEVA LÓGICA DE DIBUJO DEL MAPA HUD EN 2D ---
+        // --- 🗺️ LÓGICA DE DIBUJO DEL MAPA HUD EN 2D ---
         const marsMapCanvas = document.getElementById('hud-mars-map');
         const mapCtx = marsMapCanvas.getContext('2d');
         const mapCoordsText = document.getElementById('hud-map-coords-text');
@@ -1440,6 +1432,7 @@
                         hintEl.style.borderStyle = 'solid'; 
                         hintEl.style.transform = 'translate(-50%, -50%) scale(1.1)';
 
+                        // Feedback activo de escáner en el HUD
                         scannerText.innerHTML = `
                             SCANNER: LOCKING TARGET...<br>
                             ATMOSPHERE: CO2 95% // TEMP: -63 °C<br>
@@ -1484,13 +1477,15 @@
                 renderMarsHoloMap();
 
             } else {
-                // --- EFECTO ACELERACIÓN WARP SUAVE Y ALTAMENTE SUTIL ---
+                // --- EFECTO DE TRANSICIÓN DE AMARTIZAJE / IMPULSO ACELERADO ---
                 warpSpeed += 0.035; 
 
-                camera.fov = THREE.MathUtils.lerp(camera.fov, 115, 0.04); 
+                // CLAVE 1: Disminuimos el campo de visión (FOV) para crear un zoom de velocidad telescópico brutal hacia adelante
+                camera.fov = THREE.MathUtils.lerp(camera.fov, 40, 0.05); 
                 camera.updateProjectionMatrix();
 
-                camera.position.z = Math.max(2.22, camera.position.z - warpSpeed);
+                // CLAVE 2: Lanzamos la cámara a gran velocidad directamente a traspasar el planeta (Z = -1.5) hundiéndonos en su núcleo
+                camera.position.z = Math.max(-1.5, camera.position.z - warpSpeed * 10.0);
                 camera.position.x = THREE.MathUtils.lerp(camera.position.x, 0, 0.1);
                 camera.position.y = THREE.MathUtils.lerp(camera.position.y, 0, 0.1);
 
@@ -1572,13 +1567,20 @@
             if (intersects.length > 0) {
                 isTransitioning = true;
 
-                // Sonido de impulso Warp desbocado y dramático
+                // Sonido de impulso Warp desbocado y dramático de aceleración ascendente
                 playWarpSound();
 
                 hintEl.style.opacity = '0';
                 hudPanel.style.opacity = '0';
+                
+                // CLAVE: Desvanecemos también la caja completa de interactivos del HUD para que no queden pegados
+                const hudInteractive = document.getElementById('hud-interactive');
+                if (hudInteractive) {
+                    hudInteractive.style.opacity = '0';
+                    hudInteractive.style.pointerEvents = 'none';
+                }
 
-                // Desvanecer música espacial
+                // Desvanecer música de cabina
                 if (masterGain) {
                     masterGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.8);
                 }
