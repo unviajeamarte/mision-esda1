@@ -3,985 +3,1149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Misión Marte - Proyectos Blender</title>
-    <!-- Importamos las fuentes para el visor HUD -->
+    <title>Misión Marte - Galerí­a de Proyectos</title>
+    <!-- Importamos exactamente las dos fuentes elegantes de Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
+        /* --- CONFIGURACIÓN DE COLORES Y VARIABLES HUD --- */
+        :root {
+            --color-bg: #060203;
+            --color-mars: #ff5533;
+            --color-mars-glow: rgba(255, 85, 51, 0.4);
+            --color-text-primary: #ffffff;
+            --color-text-secondary: #a3b8cc;
+            --color-glass: rgba(16, 8, 10, 0.75);
+            --color-border: rgba(255, 85, 51, 0.22);
+            --color-grid: rgba(255, 85, 51, 0.08);
+        }
+
+        /* --- VERSIÓN HUD DE DÍA (TELEMETRÍA SOLAR) --- */
+        /* Todo el naranja pasa a azul eléctrico y las tarjetas a gris claro tecnológico destacando sobre el fondo */
+        body.day-mode {
+            --color-bg: #f8fafc; /* Fondo gris claro Slate-50 muy limpio */
+            --color-mars: #0052ff; /* Azul eléctrico de alta visibilidad */
+            --color-mars-glow: rgba(0, 82, 255, 0.25);
+            --color-text-primary: #1e293b; /* Slate-800 para contraste óptimo */
+            --color-text-secondary: #475569; /* Slate-600 */
+            --color-glass: #e2e8f0; /* Tarjetas gris claro Slate-100 que destacan claramente del fondo */
+            --color-border: rgba(0, 82, 255, 0.35);
+            --color-grid: rgba(0, 82, 255, 0.08);
+        }
+
         /* --- ESTILOS GENERALES --- */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Nunito', sans-serif; 
+        }
+
+        /* Suavizar la transición cromática global */
+        body, .project-card, header, footer, .modal-content, .btn-return, .theme-toggle, h2, p, h1, span, .video-box {
+            transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
         }
 
         body {
-            background-color: #010103;
-            overflow: hidden;
-            width: 100vw;
-            height: 100vh;
-            cursor: pointer;
+            background-color: var(--color-bg);
+            color: var(--color-text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
         }
 
-        #space-canvas {
+        /* Fondo dinámico de gas vaporoso de aterrizaje y destellos */
+        #gas-background {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 1;
-        }
-
-        /* --- MARCO DE INTERFAZ HUD (PANTALLA DE CABINA) --- */
-        .hud-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 2;
+            z-index: 0;
             pointer-events: none;
-            border: 1px solid rgba(255, 85, 51, 0.15);
-            box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.8), inset 0 0 40px rgba(255, 85, 51, 0.05);
-            box-sizing: border-box;
-            transition: opacity 0.8s ease;
         }
 
-        /* Rejilla de píxeles digitales sutiles */
-        .hud-scanline-grid {
+        /* --- BOTÓN DE CONMUTACIÓN DE TELEMETRÍA (DÍA/NOCHE) --- */
+        .theme-toggle {
+            position: absolute;
+            top: 35px;
+            right: 20px;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 1px solid var(--color-border);
+            background: var(--color-glass);
+            color: var(--color-mars);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .theme-toggle:hover {
+            background: var(--color-mars);
+            color: #ffffff;
+            box-shadow: 0 0 15px var(--color-mars-glow);
+            transform: translateY(-2px);
+        }
+
+        body.day-mode .theme-toggle:hover {
+            color: #f8fafc;
+        }
+
+        .theme-toggle svg {
+            width: 18px;
+            height: 18px;
+            transition: transform 0.3s ease;
+        }
+
+        /* --- CABECERA DE LA INTERFAZ DE NAVEGACIÓN --- */
+        header {
+            position: relative;
+            z-index: 1;
+            max-width: 1300px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 40px 20px 20px 20px;
+            text-align: center;
+            border-bottom: 1px dashed var(--color-border);
+        }
+
+        /* Contenedor del Logo ESDA alineado arriba a la izquierda y alineado simétricamente con el botón solar */
+        .logo-container {
+            position: absolute;
+            top: 35px;
+            left: 20px;
+            height: 38px; /* Misma altura que el botón del sol/luna */
+            display: flex;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .logo-esda {
+            height: 30px; 
+            width: auto;
+            opacity: 0.85;
+            transition: opacity 0.3s ease, filter 0.3s ease;
+            /* Fuerza a que el logotipo original se vuelva completamente blanco brillante */
+            filter: brightness(0) invert(1);
+        }
+
+        .logo-esda:hover {
+            opacity: 1;
+            /* Mantiene el logotipo en blanco y le suma el sutil resplandor marciano */
+            filter: brightness(0) invert(1) drop-shadow(0 0 6px var(--color-mars-glow));
+        }
+
+        body.day-mode .logo-esda {
+            filter: brightness(0) opacity(0.85); /* Filtro oscuro en modo día */
+        }
+
+        body.day-mode .logo-esda:hover {
+            filter: brightness(0) opacity(1) drop-shadow(0 0 6px var(--color-mars-glow));
+        }
+
+        /* Ajuste responsive para pantallas pequeñas */
+        @media (max-width: 900px) {
+            header {
+                padding-top: 110px; /* Deja espacio para el logo y botón arriba */
+            }
+            .logo-container {
+                position: absolute;
+                top: 25px;
+                left: 20px;
+                height: 38px;
+                display: flex;
+                align-items: center;
+            }
+            .theme-toggle {
+                position: absolute;
+                top: 25px;
+                right: 20px;
+            }
+        }
+
+        .hud-subtitle {
+            font-family: 'Montserrat', sans-serif; /* Tipografía destacada HUD */
+            font-size: 0.85rem;
+            color: var(--color-mars);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        header h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.8rem;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            margin: 10px 0;
+            font-weight: 900;
+            text-shadow: 0 0 20px var(--color-mars-glow);
+        }
+
+        .hud-line {
+            width: 120px;
+            height: 2px;
+            background-color: var(--color-mars);
+            margin: 15px auto;
+            box-shadow: 0 0 10px var(--color-mars);
+        }
+
+        .edition-tag {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .hud-description {
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.8rem;
+            color: var(--color-text-primary);
+            max-width: 650px;
+            margin: 15px auto 0 auto;
+            line-height: 1.6;
+            font-weight: 300;
+            text-transform: initial; 
+            opacity: 0.9;
+        }
+
+        /* Botón inmersivo de retorno */
+        .btn-return {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 25px;
+            width: 48px;
+            height: 48px;
+            border: 1px solid var(--color-border);
+            border-radius: 50%;
+            background: rgba(255, 85, 51, 0.02);
+            color: var(--color-mars);
+            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        body.day-mode .btn-return {
+            background: rgba(0, 82, 255, 0.02);
+        }
+
+        .btn-return:hover {
+            background: var(--color-mars);
+            color: #ffffff;
+            box-shadow: 0 0 15px var(--color-mars-glow);
+            transform: translateY(-4px) scale(1.05);
+        }
+
+        body.day-mode .btn-return:hover {
+            color: #f8fafc;
+        }
+
+        /* Icono de la nave espacial despegando */
+        .spaceship-nav-icon {
+            width: 24px;
+            height: 24px;
+            transition: transform 0.3s ease;
+        }
+
+        .btn-return:hover .spaceship-nav-icon {
+            transform: translateY(-2px);
+        }
+
+        /* --- GRID PRINCIPAL EN DOS COLUMNAS --- */
+        main {
+            position: relative;
+            z-index: 1;
+            max-width: 1300px;
+            width: 100%;
+            margin: 30px auto;
+            padding: 0 20px 40px 20px;
+            flex-grow: 1;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 40px;
+        }
+
+        /* Adaptabilidad a dispositivos de menor tamaño */
+        @media (max-width: 1000px) {
+            .gallery-grid {
+                grid-template-columns: 1fr; 
+                gap: 30px;
+            }
+        }
+
+        /* --- TARJETAS DE PROYECTOS --- */
+        .project-card {
+            background: var(--color-glass);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 24px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Marcadores estéticos de esquina estilo HUD */
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 12px;
+            height: 12px;
+            border-top: 2px solid var(--color-mars);
+            border-left: 2px solid var(--color-mars);
+            opacity: 0.4;
+            transition: all 0.3s ease;
+        }
+
+        .project-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 12px;
+            height: 12px;
+            border-bottom: 2px solid var(--color-mars);
+            border-right: 2px solid var(--color-mars);
+            opacity: 0.4;
+            transition: all 0.3s ease;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--color-mars);
+            box-shadow: 0 12px 30px var(--color-mars-glow), inset 0 0 15px rgba(255, 85, 51, 0.05);
+        }
+
+        .project-card:hover::before, .project-card:hover::after {
+            opacity: 1;
+            width: 20px;
+            height: 20px;
+        }
+
+        /* --- CONTENEDOR DE VISTA PREVIA --- */
+        .video-box {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* Relación de aspecto 16:9 */
+            background-color: #0b0507;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            border: 1px solid var(--color-border);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* Suave zoom out e iluminación de la miniatura al hacer hover */
+        .video-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: inherit;
+            background-size: cover;
+            background-position: center;
+            transition: transform 0.5s ease, filter 0.3s ease;
+            z-index: 0;
+        }
+
+        .video-box:hover::before {
+            transform: scale(1.05);
+            filter: brightness(1.15);
+        }
+
+        /* Rejilla técnica de fondo en el placeholder */
+        .video-box-grid {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             background-image: 
-                linear-gradient(rgba(255, 85, 51, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 85, 51, 0.03) 1px, transparent 1px);
-            background-size: 30px 30px;
+                linear-gradient(var(--color-grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
+            background-size: 20px 20px;
             background-position: center;
+            z-index: 2;
+            pointer-events: none;
         }
 
-        /* Indicador de Grabación (REC) parpadeante superior derecho */
-        .hud-rec-indicator {
+        /* --- LÍNEA DE BARRIDO DE RADAR HUD --- */
+        .hud-scanning-line {
             position: absolute;
-            top: 30px;
-            right: 30px;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, var(--color-mars) 50%, transparent 100%);
+            left: 0;
+            top: 0;
+            z-index: 3;
+            pointer-events: none;
+            box-shadow: 0 0 10px var(--color-mars-glow);
+            animation: radarSweep 5s infinite linear;
+            opacity: 0.65;
+        }
+
+        @keyframes radarSweep {
+            0% {
+                transform: translateY(0);
+                opacity: 0;
+            }
+            8% {
+                opacity: 0.7;
+            }
+            92% {
+                opacity: 0.7;
+            }
+            100% {
+                transform: translateY(180px); /* Recorre el contenedor de la imagen */
+                opacity: 0;
+            }
+        }
+
+        /* Adaptabilidad del barrido a tamaños de pantalla fluidos */
+        @media (max-width: 1400px) {
+            @keyframes radarSweep {
+                0% { transform: translateY(0); opacity: 0; }
+                8% { opacity: 0.7; }
+                92% { opacity: 0.7; }
+                100% { transform: translateY(22vw); opacity: 0; } /* Ratio adaptado para anchos menores */
+            }
+        }
+
+        /* Ondas e iconos estéticos de la interfaz de telemetría de Marte */
+        .hud-telemetry-decor {
+            position: absolute;
+            width: 84%;
+            height: 68%;
+            border: 1px dashed var(--color-border);
+            border-radius: 4px;
+            top: 16%;
+            left: 8%;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .video-box:hover .hud-telemetry-decor {
+            border-color: var(--color-mars);
+            transform: scale(1.02);
+        }
+
+        .hud-telemetry-decor::before {
+            content: 'SYSTEM ONLINE // FEED 1080P';
+            position: absolute;
+            top: 6px;
+            left: 8px;
             font-family: 'Montserrat', sans-serif;
-            font-size: 10px;
-            color: #ff5533;
-            letter-spacing: 2px;
+            font-size: 7px;
+            color: var(--color-mars);
+            opacity: 0.7;
+            letter-spacing: 1.5px;
             font-weight: 700;
-            text-shadow: 0 0 8px rgba(255, 85, 51, 0.6);
+        }
+
+        .hud-telemetry-decor::after {
+            content: 'REC •';
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 8px;
+            color: var(--color-mars);
+            letter-spacing: 1.5px;
+            font-weight: 900;
+            text-shadow: 0 0 5px var(--color-mars-glow);
             animation: blink 1.5s infinite;
         }
-
-        /* Datos de telemetría superior izquierda con la marca ESDA */
-        .hud-system-status {
-            position: absolute;
-            top: 30px;
-            left: 30px;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 9px;
-            color: rgba(255, 85, 51, 0.6);
-            letter-spacing: 1.5px;
-            font-weight: 500;
-            line-height: 1.6;
-        }
-
-        /* Coordenadas en tiempo real en la parte inferior izquierda */
-        .hud-telemetry-coordinates {
-            position: absolute;
-            bottom: 35px;
-            left: 30px;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 9px;
-            color: rgba(255, 85, 51, 0.5);
-            letter-spacing: 1px;
-            line-height: 1.5;
-        }
-
-        /* Estado del escáner en la parte inferior derecha */
-        .hud-scanner-feedback {
-            position: absolute;
-            bottom: 35px;
-            right: 30px;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 9px;
-            color: rgba(255, 85, 51, 0.5);
-            letter-spacing: 1px;
-            text-align: right;
-            line-height: 1.5;
-        }
-
-        /* Leyenda de aterrizaje en la parte inferior */
-        .hud-landing-warning {
-            position: absolute;
-            bottom: 35px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-family: 'Montserrat', sans-serif;
-            font-size: 11px;
-            color: #ffffff;
-            letter-spacing: 4px;
-            font-weight: 500;
-            text-transform: uppercase;
-            text-align: center;
-            opacity: 0.8;
-            text-shadow: 0 0 10px rgba(255, 85, 51, 0.4);
-            transition: color 0.4s ease, text-shadow 0.4s ease;
-            width: 40%;
-        }
-
-        /* Esquinas HUD estilizadas */
-        .hud-corner {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            border-color: rgba(255, 85, 51, 0.4);
-            border-style: solid;
-        }
-        .top-left { top: 15px; left: 15px; border-width: 2px 0 0 2px; }
-        .top-right { top: 15px; right: 15px; border-width: 2px 2px 0 0; }
-        .bottom-left { bottom: 15px; left: 15px; border-width: 0 0 2px 2px; }
-        .bottom-right { bottom: 15px; right: 15px; border-width: 0 2px 2px 0; }
 
         @keyframes blink {
             50% { opacity: 0; }
         }
 
-        /* Mira/Círculo interactivo de zona de aterrizaje */
-        .cursor-hint {
+        /* Capa superpuesta con botón Play personalizado para indicar acción */
+        .video-overlay {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 3;
-            pointer-events: none;
-            border: 2px dashed rgba(255, 85, 51, 0.5);
-            border-radius: 50%;
-            width: 120px;
-            height: 120px;
-            opacity: 0;
-            transition: opacity 1.5s ease, border-color 0.3s ease, border-style 0.3s ease, transform 0.3s ease;
-            animation: radar 2.5s infinite linear;
-        }
-
-        /* Transición de carga atmosférica */
-        .fade-out-overlay {
-            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: #9c311a;
-            z-index: 10;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.8s ease-in;
-        }
-
-        /* Animación de radar base para la mira */
-        @keyframes radar {
-            0% {
-                transform: translate(-50%, -50%) scale(0.85);
-                opacity: 0;
-            }
-            50% {
-                opacity: 0.6;
-            }
-            100% {
-                transform: translate(-50%, -50%) scale(1.2);
-                opacity: 0;
-            }
-        }
-
-        /* --- CONTENEDOR HUD DE INTERACTIVOS --- */
-        .hud-interactive-container {
-            position: absolute;
-            z-index: 20;
-            pointer-events: auto; /* Habilita clicks específicos sobre la capa HUD */
+            background: rgba(6, 2, 3, 0.45);
             display: flex;
-            flex-direction: column;
-            gap: 12px;
-            top: 150px;
-            left: 30px;
-            transition: opacity 0.8s ease; /* Transición añadida para ocultarlo suavemente */
+            justify-content: center;
+            align-items: center;
+            transition: background 0.3s ease, opacity 0.3s ease;
+            z-index: 3;
         }
 
-        /* Estilo base del botón HUD de la consola */
-        .btn-hud-control {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 10px;
-            color: #ff5533;
+        .video-box:hover .video-overlay {
             background: rgba(255, 85, 51, 0.05);
-            border: 1px solid rgba(255, 85, 51, 0.3);
-            border-radius: 4px;
-            padding: 10px 18px;
-            letter-spacing: 2px;
-            font-weight: 700;
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(255, 85, 51, 0.05);
-            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        body.day-mode .video-box:hover .video-overlay {
+            background: rgba(0, 82, 255, 0.03);
+        }
+
+        .play-button {
+            width: 54px;
+            height: 54px;
+            background: rgba(16, 8, 10, 0.9);
+            border: 1px solid var(--color-mars);
+            border-radius: 50%;
             display: flex;
+            justify-content: center;
             align-items: center;
-            gap: 10px;
-            width: 210px;
+            box-shadow: 0 0 15px var(--color-mars-glow);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.3s ease;
+            z-index: 4;
         }
 
-        .btn-hud-control:hover {
-            background: #ff5533;
-            color: #010103;
-            box-shadow: 0 0 15px rgba(255, 85, 51, 0.4);
-            transform: translateX(4px);
+        .play-button svg {
+            fill: #ffffff;
+            width: 20px;
+            height: 20px;
+            margin-left: 3px;
+            transition: fill 0.3s ease;
         }
 
-        /* --- CAJA DEL MAPA HOLOGRÁFICO DE SUPERFICIE --- */
-        .hud-map-box {
-            width: 210px;
-            background: rgba(16, 8, 10, 0.6);
-            border: 1px solid rgba(255, 85, 51, 0.25);
-            border-radius: 4px;
-            padding: 12px;
+        .video-box:hover .play-button {
+            transform: scale(1.1) rotate(5deg);
+            background: var(--color-mars);
+            border-color: var(--color-mars);
+            box-shadow: 0 0 25px var(--color-mars-glow);
+        }
+
+        .video-box:hover .play-button svg {
+            fill: #010103;
+        }
+
+        body.day-mode .video-box:hover .play-button svg {
+            fill: #f8fafc;
+        }
+
+        /* --- ESTILOS DE INFORMACIÓN --- */
+        .student-tag {
             font-family: 'Montserrat', sans-serif;
-            color: #ff5533;
-            box-shadow: 0 0 15px rgba(255, 85, 51, 0.05);
-            pointer-events: auto;
-        }
-
-        .hud-map-title {
-            font-size: 8px;
-            letter-spacing: 1.5px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .hud-map-status {
-            color: #ff3a0c;
-            animation: blink 1s infinite alternate;
-        }
-
-        .hud-map-screen {
-            width: 186px;
-            height: 100px;
-            background-color: #060203;
-            border: 1px solid rgba(255, 85, 51, 0.15);
-            border-radius: 2px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        #hud-mars-map {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-
-        .hud-map-telemetry {
-            font-size: 8px;
-            color: rgba(255, 85, 51, 0.6);
-            margin-top: 8px;
-            line-height: 1.4;
-            font-family: 'Montserrat', sans-serif;
-        }
-
-        /* --- CONSOLA DEL ARCADE DE MARCIANOS DE 8 BITS --- */
-        .holo-game-frame {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.9);
-            width: 480px;
-            background: rgba(12, 4, 6, 0.96);
-            border: 2px solid #ff5533;
-            box-shadow: 0 0 40px rgba(255, 85, 51, 0.35), inset 0 0 20px rgba(255, 85, 51, 0.1);
-            border-radius: 8px;
-            padding: 22px;
-            z-index: 100;
-            pointer-events: auto;
-            display: none;
-            opacity: 0;
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
-        }
-
-        .holo-game-frame.active {
-            display: block;
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-        }
-
-        .holo-game-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px dashed rgba(255, 85, 51, 0.3);
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 11px;
-            color: #ff5533;
-            letter-spacing: 2px;
-            font-weight: 700;
-        }
-
-        .holo-game-close {
-            background: none;
-            border: 1px solid rgba(255, 85, 51, 0.4);
-            color: #ff5533;
-            padding: 2px 8px;
-            font-size: 9px;
-            cursor: pointer;
-            border-radius: 2px;
-            transition: all 0.3s ease;
-        }
-
-        .holo-game-close:hover {
-            background: #ff5533;
-            color: #010103;
-        }
-
-        /* Lienzo de juego */
-        .game-canvas-container {
-            width: 100%;
-            height: 280px;
-            background-color: #060203;
-            border: 1px solid rgba(255, 85, 51, 0.25);
-            border-radius: 4px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        #arcade-canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-
-        /* Instrucciones de control de teclado */
-        .game-controls-info {
-            margin-top: 12px;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 9px;
-            color: #a3b8cc;
+            display: inline-block;
+            font-size: 0.75rem;
+            color: var(--color-mars);
+            border: 1px solid var(--color-border);
+            background: var(--color-mars-glow);
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 12px;
             letter-spacing: 1px;
-            text-align: center;
+            text-transform: uppercase;
+            font-weight: bold;
         }
 
-        /* Botonera de control móvil */
-        .mobile-buttons-bar {
+        .project-card h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.3rem;
+            color: var(--color-text-primary);
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+        }
+
+        .project-card p {
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.95rem;
+            color: var(--color-text-secondary);
+            line-height: 1.6;
+            margin-bottom: 15px;
+            font-weight: 300;
+        }
+
+        /* Pie de tarjeta adaptado */
+        .card-footer {
+            font-family: 'Montserrat', sans-serif;
+            margin-top: auto;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
             display: flex;
             justify-content: space-between;
-            gap: 10px;
-            margin-top: 15px;
-            border-top: 1px dashed rgba(255, 85, 51, 0.3);
-            padding-top: 12px;
-        }
-
-        .mobile-btn {
-            background: none;
-            border: 1px solid rgba(255, 85, 51, 0.4);
-            color: #ff5533;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 10px;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #6a7c91;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             font-weight: 700;
-            padding: 8px 16px;
+        }
+
+        body.day-mode .card-footer {
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            color: #64748b;
+        }
+
+        .class-badge {
+            color: var(--color-text-secondary);
+        }
+
+        .group-badge {
+            color: var(--color-mars);
+        }
+
+        /* --- PANEL CINEMÁTICO EN EXPANSIÓN (A MEDIA PANTALLA) --- */
+        .video-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(3, 1, 2, 0.95);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        .video-modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* Contenedor central a Media Pantalla */
+        .modal-content {
+            width: 55vw;
+            max-width: 1000px;
+            min-width: 320px;
+            background: var(--color-glass);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 18px;
+            box-shadow: 0 20px 50px rgba(255, 85, 51, 0.25);
+            position: relative;
+            transform: scale(0.92);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+        }
+
+        body.day-mode .modal-content {
+            box-shadow: 0 20px 50px var(--color-mars-glow);
+        }
+
+        @media (max-width: 1100px) {
+            .modal-content {
+                width: 85vw;
+            }
+        }
+
+        .video-modal.active .modal-content {
+            transform: scale(1);
+        }
+
+        /* Marco 16:9 interactivo del reproductor de Google Drive */
+        .modal-video-wrapper {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%;
+            background: #000;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--color-border);
+        }
+
+        .modal-video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+            outline: none;
+        }
+
+        /* Botón de cierre superior */
+        .modal-close {
+            font-family: 'Montserrat', sans-serif;
+            position: absolute;
+            top: -45px;
+            right: 0;
+            background: none;
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            color: #ffffff;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 6px 15px;
             cursor: pointer;
-            border-radius: 3px;
-            user-select: none;
-            -webkit-user-select: none;
-            letter-spacing: 1.5px;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            font-weight: 700;
         }
 
-        .mobile-btn:active {
-            background: rgba(255, 85, 51, 0.3);
-            transform: scale(0.95);
+        body.day-mode .modal-close {
+            color: #1e293b;
         }
 
-        @media (max-width: 500px) {
-            .holo-game-frame {
-                width: 95vw;
-                padding: 15px;
-            }
-            .game-canvas-container {
-                height: 220px;
-            }
+        .modal-close:hover {
+            background: var(--color-mars);
+            color: #010103;
+            box-shadow: 0 0 10px var(--color-mars-glow);
+        }
+
+        body.day-mode .modal-close:hover {
+            color: #f8fafc;
+        }
+
+        .modal-info-box {
+            margin-top: 15px;
+            padding: 5px 5px 0 5px;
+        }
+
+        .modal-info-box h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.25rem;
+            color: var(--color-text-primary);
+            margin-bottom: 4px;
+            font-weight: 700;
+        }
+
+        .modal-info-box p {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.85rem;
+            color: var(--color-mars);
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        /* --- FOOTER (PIE DE PÁGINA) --- */
+        footer {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            text-align: center;
+            padding: 30px 20px;
+            margin-top: auto;
+            border-top: 1px dashed var(--color-border);
+            background: rgba(4, 2, 3, 0.8);
+        }
+
+        body.day-mode footer {
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        footer p {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.85rem;
+            color: #6a7c91;
+            letter-spacing: 3px;
+            font-weight: 400; 
+        }
+
+        footer p span {
+            color: var(--color-mars);
+            text-shadow: 0 0 10px var(--color-mars-glow);
+            font-weight: 400; 
         }
     </style>
-    <!-- Incluimos Three.js desde un CDN seguro -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-    <!-- Canvas de renderizado 3D -->
-    <canvas id="space-canvas"></canvas>
+    <!-- Canvas de soporte para el fondo de gas dinámico -->
+    <canvas id="gas-background"></canvas>
 
-    <!-- Cabina de Telemetría HUD -->
-    <div class="hud-overlay" id="hud-panel">
-        <div class="hud-scanline-grid"></div>
-        <div class="hud-corner top-left"></div>
-        <div class="hud-corner top-right"></div>
-        <div class="hud-corner bottom-left"></div>
-        <div class="hud-corner bottom-right"></div>
-        
-        <div class="hud-rec-indicator">REC •</div>
-        <div class="hud-system-status">
-            TERM_ID: ESDA_NAV_01<br>
-            CAM_FEED: ACTIVE<br>
-            SYS_LOC: MA_ORBITAL_S1<br>
-            WVP_MATRIX: AUTO_CAL
+    <!-- Cabecera HUD -->
+    <header>
+        <!-- Logotipo ESDA en la parte superior izquierda -->
+        <div class="logo-container">
+            <a href="https://esda.es/" target="_blank" rel="noopener noreferrer">
+                <img src="https://esda.es/wp-content/uploads/2023/03/ESDA-logo-horizontal.svg" alt="ESDA Logo" class="logo-esda" onerror="this.onerror=null; this.src='https://esda.es/images/logo.png';">
+            </a>
         </div>
 
-        <!-- Coordenadas vivas en tiempo real -->
-        <div class="hud-telemetry-coordinates" id="coords-text">
-            LAT: 12° 24' 18" S<br>
-            LON: 34° 56' 02" E<br>
-            ALT: 421.85 km
-        </div>
-
-        <!-- Feedback del analizador de atmósfera -->
-        <div class="hud-scanner-feedback" id="scanner-text">
-            SCANNER: STANDBY<br>
-            ATMOSPHERE: CO2 95%<br>
-            TEMP: -63 °C
-        </div>
-
-        <div class="hud-landing-warning" id="warning-text"></div>
-    </div>
-
-    <!-- CONTENEDOR HUD DE INTERACTIVOS (Clicks habilitados para el usuario) -->
-    <div class="hud-interactive-container" id="hud-interactive">
-        <!-- Botón del Minijuego de Defensa -->
-        <button class="btn-hud-control" id="btn-open-arcade">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2" y="6" width="20" height="12" rx="2" ry="2"/>
-                <path d="M12 12h.01"/>
-                <path d="M17 10h.01"/>
-                <path d="M17 14h.01"/>
-                <path d="M7 12h2"/>
-                <path d="M8 11v2"/>
+        <!-- Botón de Conmutación de Telemetría (Día/Noche) alineado simétricamente con el logo -->
+        <button class="theme-toggle" id="theme-toggle" title="Cambiar telemetría (Día/Noche)">
+            <!-- Icono de Sol / Radar Solar -->
+            <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"/>
+                <line x1="12" y1="1" x2="12" y2="3"/>
+                <line x1="12" y1="21" x2="12" y2="23"/>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                <line x1="1" y1="12" x2="3" y2="12"/>
+                <line x1="21" y1="12" x2="23" y2="12"/>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
             </svg>
-            MARS_ARCADE_01
+            <!-- Icono de Luna -->
+            <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
         </button>
 
-        <!-- NUEVO ELEMENTO: MAPA HOLOGRÁFICO DE SUPERFICIE MARCIANA -->
-        <div class="hud-map-box">
-            <div class="hud-map-title">
-                <span>SURFACE_MAPPING</span>
-                <span id="hud-map-status-label" class="hud-map-status">SCANNING</span>
-            </div>
-            <div class="hud-map-screen">
-                <canvas id="hud-mars-map" width="186" height="100"></canvas>
-            </div>
-            <div class="hud-map-telemetry" id="hud-map-coords-text">
-                TRACKING: OFF_RANGE<br>
-                COORDS: --° --' N / --° --' E
-            </div>
-        </div>
-    </div>
-    
-    <!-- Mira interactiva de designación de aterrizaje -->
-    <div id="planet-hint" class="cursor-hint"></div>
-
-    <!-- Capa de transición a rojo atmósfera al hacer clic -->
-    <div id="transition-overlay" class="fade-out-overlay"></div>
-
-    <!-- ARCADE DE COMBATE DE 8 BITS (CANVAS JUEGO DE MARCIANOS) -->
-    <div class="holo-game-frame" id="holo-frame">
-        <div class="holo-game-header">
-            <span>MARS_ARCADE_v1.0.EXE</span>
-            <button class="holo-game-close" id="btn-close-arcade">CERRAR [X]</button>
-        </div>
-        <div class="game-canvas-container">
-            <canvas id="arcade-canvas" width="400" height="240"></canvas>
-        </div>
-        <div class="game-controls-info">
-            TECLADO: [A/D] o [←/→] Mover - [ESPACIO] Disparar
-        </div>
-        <div class="mobile-buttons-bar">
-            <button class="mobile-btn" id="m-btn-left">◄ IZQUIERDA</button>
-            <button class="mobile-btn" id="m-btn-fire">¡FUEGO! 🔥</button>
-            <button class="mobile-btn" id="m-btn-right">DERECHA ►</button>
-        </div>
-    </div>
-
-    <script>
-        // --- INICIALIZACIÓN DE LA ESCENA ---
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x010103, 0.008);
-
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('space-canvas'), antialias: true });
+        <p class="hud-subtitle">Misiones de Reconocimiento</p>
+        <h1>Paisajes marcianos</h1>
+        <div class="hud-line"></div>
+        <p class="edition-tag"> 2º de Diseño Gráfico | 25-26</p>
         
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.4;
+        <p class="hud-description">Desde la asignatura de Medios Informáticos II, e inspirados en el concepto del DiseñaFest’26, se propone a los alumnos imaginar una escena en Marte. Con total libertad creativa, en cuanto a su visión y estética, y después de todo el desarrollo del proyecto (ADD) en Blender, diseñaron un breve teaser promocional del Festival. A continuación una muestra. </p>
 
-        // --- SISTEMA DE ESTRELLAS DE FONDO ---
-        const starsGeometry = new THREE.BufferGeometry();
-        const starsCount = 2000;
-        const starPositions = new Float32Array(starsCount * 3);
-        const starColors = new Float32Array(starsCount * 3);
+        <!-- Retorno al Index 3D -->
+        <a href="index.html" class="btn-return" id="btn-back" title="Volver a la Nave / Landing">
+            <svg class="spaceship-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2s-5 4-5 10c0 1.5 1 2.5 2 3h6c1-0.5 2-1.5 2-3 0-6-5-10-5-10z" />
+                <path d="M9 15l-3 2v-4" />
+                <path d="M15 15l3 2v-4" />
+                <path d="M12 17v5" />
+                <path d="M10 18.5l2 3.5 2-3.5" />
+                <circle cx="12" cy="8" r="1.5" fill="currentColor"/>
+            </svg>
+        </a>
+    </header>
 
-        for (let i = 0; i < starsCount * 3; i += 3) {
-            const u = Math.random();
-            const v = Math.random();
-            const theta = u * 2.0 * Math.PI;
-            const phi = Math.acos(2.0 * v - 1.0);
-            const r = 100 + Math.random() * 140;
+    <!-- Contenedor de Proyectos en Dos Columnas -->
+    <main>
+        <div class="gallery-grid" id="gallery-container">
+            <!-- Los 30 elementos se renderizan procedimentalmente por JS -->
+        </div>
+    </main>
 
-            starPositions[i] = r * Math.sin(phi) * Math.cos(theta);
-            starPositions[i+1] = r * Math.sin(phi) * Math.sin(theta);
-            starPositions[i+2] = r * Math.cos(phi);
+    <!-- REPRODUCTOR MODAL AMPLIADO A MEDIA PANTALLA -->
+    <div class="video-modal" id="video-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="modal-close">Cerrar [X]</button>
+            <div class="modal-video-wrapper">
+                <iframe id="modal-iframe" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            </div>
+            <div class="modal-info-box">
+                <h3 id="modal-title">Título del Proyecto</h3>
+                <p id="modal-student">Autor/es</p>
+            </div>
+        </div>
+    </div>
 
-            const rand = Math.random();
-            if (rand > 0.8) {
-                starColors[i] = 0.85;   
-                starColors[i+1] = 0.95;
-                starColors[i+2] = 1.0;
-            } else if (rand > 0.6) {
-                starColors[i] = 1.0;    
-                starColors[i+1] = 0.95;
-                starColors[i+2] = 0.8;
-            } else {
-                starColors[i] = 1.0;    
-                starColors[i+1] = 1.0;
-                starColors[i+2] = 1.0;
+    <!-- Pie de Página -->
+    <footer>
+        <p>J.M. Cifuentes | <span>ESDA</span> Curso 2025 - 2026</p>
+    </footer>
+
+    <!-- SCRIPT DE EFECTOS VISUALES Y SONOROS (WEB AUDIO API) -->
+    <script>
+        // --- 1. BANCO DE DATOS DE LOS 24 PROYECTOS ---
+        const proyectos = [
+            { id: 1, student: "Alejandro Bellosta", title: "Sonda Robotizada de Superficie", desc: "Modelado industrial (Hard-Surface) y ensamblado mecánico de un vehículo robotizado autónomo de exploración. Animación por armadura (rigging) para el comportamiento de las orugas articuladas.", class: "2º DG", group: "Grupo B", videoId: "1oi6maskOayEdoypr17dYPJaWJ242s_3R" },
+            { id: 2, student: "Ana Marí­a Cojocaru", title: "Invernadero Hidropónico Autosuficiente", desc: "Propuesta arquitectónica de domos geodésicos translúcidos para el cultivo y soporte vital de la primera colonia. Destaca por el treatment de sombreadores y materiales de cristal orgánico.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 3, student: "Aitana Garcí­a", title: "Módulo de Aterrizaje Atmosférico", desc: "Reconstrucción tridimensional de un transbordador de descenso tripulado. Se ha desarrollado una fí­sica de partí­culas para simular el fuego de propulsión de los retrocohetes térmicos.", class: "2º DG", group: "Grupo B", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 4, student: "Aldara Esteban", title: "Base de Telecomunicaciones de Órbita Alta", desc: "Diseño de una estación de telecomunicaciones en sintoní­a orbital. Animación cinemática del despliegue progresivo de las antenas parabólicas y paneles solares procedurales.", class: "2º DG", group: "Grupo B", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 5, student: "Amina Talby", title: "Satélite de Mapeo Geográfico", desc: "Sonda cartográfica de órbita polar. Rigging automatizado de paneles fotovoltaicos y antenas parabólicas con texturas mecánicas de Blender Cycles.", class: "2º DG", group: "Grupo B", videoId: "16FIpYnvmHBSvhe1e5_KN3TMNuX5pxkDO" },
+            { id: 6, student: "Aurora Lahuerta", title: "Rumbo al DF, diseñadores explorando", desc: "La idea central se articula en torno a una revelación escénica: una cascada de lava que actúa como uno de los elementos principales. A medida que la cámara avanza, se empieza a desvelar un entorno oní­rico habitado por elementos inusuales, culminando con la aparición de las iniciales del Diseña Fest (DF).", class: "2º DG", group: "Grupo A", videoId: "1mt5njXB45PksMg3NdHE4eEIJri-VHEDb" },
+            { id: 7, student: "Carla Loza", title: "Rover de Carga Pesada", desc: "Diseño 3D de un camión articulado de minerí­a con suspensión hidráulica independiente y neumáticos de aleación deformable modelados proceduralmente.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 8, student: "Elisa Burillo", title: "Dron de Reconocimiento 'Aero'", desc: "Vehí­culo aéreo no tripulado cuatrirrotor de despegue vertical adaptado a la baja densidad aérea. Modelado en curvas bezier complejas.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 9, student: "Erika Dolz", title: "Planta de Tratamiento Hidrológico", desc: "Instalación encargada de licuar el hielo subterráneo marciano. Texturas de agua procedurales mediante nodos y materiales volumétricos de cristal.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 10, student: "Eva Ayuda", title: "Lo inerte despierta", desc: "Estación rodante equipada con instrumental analí­tico de precisión. Animación de brazos robóticos y sensores cinemáticos integrados.", class: "2º DG", group: "Grupo C", videoId: "1mt5njXB45PksMg3NdHE4eEIJri-VHEDb" },
+            { id: 11, student: "Jorge Vaquerizo", title: "Laboratorio Cientí­fico Móvil", desc: "Estación rodante equipada con instrumental analí­tico de precisión. Animación de brazos robóticos y sensores cinemáticos integrados.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 12, student: "Izarbe Pescador", title: "Domo de Almacenamiento Modular", desc: "Módulos de logí­stica y carga presurizados de acoplamiento automático. Iluminación nocturna sutil de cabina con sombreadores de emisión.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 13, student: "Lara Bení­tez", title: "Cohete de Retorno Orbital", desc: "Lanzador de dos etapas diseñado para reincorporarse con el transbordador nodriza. Dinámicas de humo volumétrico mediante sombreadores Pyro de Blender.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 14, student: "Leyre Flores", title: "El diseño de un nuevo mundo", desc: "Marte como un nuevo mundo que ya ha empezado a ser habitado, querí­a representar un espacio algo tenebroso, con formas exóticas que transmitieran la sensación de estar en un territorio desconocido. Sin embargo, el recorrido, el pasadizo y el altar funcionan como señales de presencia humana, como si los diseñadores ya hubieran comenzado a construir y dar sentido a ese nuevo planeta. Por eso el texto DiseñaFest aparece elevado sobre un altar, en un lugar importante y de valor, simbolizando el papel del diseño en la creación de este nuevo mundo.", class: "2º DG", group: "Grupo A", videoId: "1Ib6MWlcpqi7Y4KBYUEd45D94UVtMAzDk" },
+            { id: 15, student: "Marina Buil", title: "Generador de Campo Magnético", desc: "Estructura de bobinas superconductoras gigantes para restaurar la magnetosfera marciana. Animación de destellos de plasma por composición.", class: "2º DG", group: "Grupo B", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 16, student: "Michelle Vela", title: "El recorrido del hielo en Marte", desc: "Este proyecto ha buscado crear un entorno que si bien está inspirado en el planeta rojo, plantea un escenario diferente al que solemos imaginarnos. Con el pretexto de que se han encontrado indicios de la existencia de agua helada bajo el suelo de Marte, el eje de la animación se centra en mostrar una version de esta hipótesis, claramente inspirada e influenciada por la ciencia ficción. Por ello, lo que observamos, aparte de especies de plantas aliení­genas y formaciones rocosas de formas extrañas, es un gran rí­o de hielo. Este no sigue las leyes fí­sicas o quí­micas de nuestro planeta, y acaba formando esferas que se elevan hacia el cielo y desembocan en un gran lago. ", class: "2º DG", group: "Grupo C", videoId: "1oi6maskOayEdoypr17dYPJaWJ242s_3R" },
+            { id: 17, student: "Miriam Serrano", title: "Extractor de Mineral de Hierro", desc: "Excavadora rotativa gigante optimizada para las llanuras ricas en hematita. Rigging complejo de engranajes y cilindros hidráulicos.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 18, student: "Pablo Marí­n", title: "Módulo Habitacional de Tripulación", desc: "Diseño ergonómico de los domos residenciales de los colonos. Modelado boastful de interiores y de mobiliario functional optimizado.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 19, student: "Pilar Gormedino", title: "Cúpula Meteorológica", desc: "Estación equipada con radares y barómetros de precisión. Materiales reflectantes de vidrio térmico y animación de radares giratorios.", class: "2º DG", group: "Grupo C", videoId: "1b3HwF4fDfIhCR7S01v_Q-BmMCfCftKqt" },
+            { id: 20, student: "Sara Gentil", title: "El viaje de la idea", desc: "Se trata de un recorrido que hace una bola 'la idea' a través de arquitecturas surrealistas sobre un lago en Marte. La bola asciende por escaleras y cruza arcos de manera fluida, simbolizando el proceso creativo hasta que aterriza y se asienta como punto de Diseña Fest. Completando la identidad.", class: "2º DG", group: "Grupo C", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 21, student: "Sara Tejeda", title: "Estación de Carga de Rovers", desc: "Plataforma de abastecimiento energético automatizado por inducción. Iluminación interactiva de recarga de batería mediante nodos.", class: "2º DG", group: "Grupo A", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 22, student: "Isabel Calvo / Tomás Ferrer", title: "Módulo de Exploración Volcánica", desc: "Sonda robótica todoterreno adaptada a la caldera del Monte Olimpo. Chasis de titanio blindado con desgaste por microimpactos.", class: "2º DG", group: "Grupo 11", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 23, student: "Manuel Delgado / Laura Cano", title: "Silo Agrí­cola Automatizado", desc: "Instalación de almacenamiento de cereales y vegetales cultivados en el domo. Rigging de cintas transportadoras y brazos clasificadores.", class: "2º DG", group: "Grupo 12", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
+            { id: 24, student: "Santiago Cruz / Miriam Esteban", title: "Colector Solar Parabólico", desc: "Matriz de espejos cóncavos autoguiados para la captación solar térmica concentrada. Animación de seguimiento solar procedural.", class: "2º DG", group: "Grupo 12", videoId: "1_o3rRorMyD7v9B7T3U66y78" }
+        ];
+
+        // --- 2. RENDERIZADO PROCEDIMENTAL DE LAS TARJETAS ---
+        const container = document.getElementById('gallery-container');
+
+        proyectos.forEach(p => {
+            const card = document.createElement('section');
+            card.className = 'project-card';
+            // CLAVE: Inyectamos el parámetro nativo '#t=1' al final del ID en la llamada del thumbnail de Google Drive.
+            // sz=w600 se procesa por el servidor y el hash del cliente fuerza la captura al segundo 1.
+            // Inyectamos de nuevo la línea de radar dinámica (<div class="hud-scanning-line"></div>).
+            card.innerHTML = `
+                <div>
+                    <div class="video-box" style="background-image: url('https://drive.google.com/thumbnail?id=${p.videoId}&sz=w600#t=1');">
+                        <div class="video-box-grid"></div>
+                        <div class="hud-scanning-line"></div>
+                        <div class="hud-telemetry-decor"></div>
+                        <div class="video-overlay">
+                            <div class="play-button">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="student-tag">${p.student}</span>
+                    <h2>${p.title}</h2>
+                    <p>${p.desc}</p>
+                </div>
+                <div class="card-footer">
+                    <span class="class-badge">${p.class}</span>
+                    <span class="group-badge">${p.group}</span>
+                </div>
+            `;
+
+            const videoBox = card.querySelector('.video-box');
+
+            // --- LISTENERS MEJORADOS PARA INTERACCIONES DE SONIDO SUTILES ---
+            card.addEventListener('mouseenter', () => {
+                if (audioCtx && audioCtx.state === 'running') {
+                    playCardHoverSound(1200); 
+                }
+            });
+
+            videoBox.addEventListener('mouseenter', (e) => {
+                e.stopPropagation();
+                if (audioCtx && audioCtx.state === 'running') {
+                    playCardHoverSound(1650); 
+                }
+            });
+
+            videoBox.addEventListener('click', () => {
+                openWarpModal(p.student, p.title, p.videoId);
+            });
+
+            container.appendChild(card);
+        });
+
+
+        // --- 3. FONDO DE GAS DE ATERRIZAJE FLUIDO Y DESTELLOS ASCENDENTES (CANVAS 2D) ---
+        const canvas = document.getElementById('gas-background');
+        const canvasCtx = canvas.getContext('2d');
+
+        let gasClouds = [];
+        let sparks = []; 
+        const numClouds = 26; 
+        const maxSparks = 60; 
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initGas();
+        }
+
+        function initGas() {
+            gasClouds = [];
+            sparks = [];
+            for (let i = 0; i < numClouds; i++) {
+                gasClouds.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height + canvas.height * 0.1, 
+                    radius: 200 + Math.random() * 250, 
+                    opacity: 0.03 + Math.random() * 0.06, 
+                    speedY: -(0.1 + Math.random() * 0.25), 
+                    speedX: (Math.random() - 0.5) * 0.12,  
+                    color: Math.random() > 0.4 ? 'rgba(235, 110, 50, ' : 'rgba(215, 80, 30, '
+                });
+            }
+            for (let i = 0; i < maxSparks; i++) {
+                createSpark(true);
             }
         }
 
-        starsGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-        starsGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
-
-        const starsMaterial = new THREE.PointsMaterial({
-            size: 0.36,
-            sizeAttenuation: true,
-            transparent: true,
-            opacity: 1.0,
-            vertexColors: true
-        });
-        const starField = new THREE.Points(starsGeometry, starsMaterial);
-        scene.add(starField);
-
-
-        // --- SISTEMA VECTORIAL DE LÍNEAS WARP ---
-        const warpLinesCount = 150;
-        const warpLinesGeometry = new THREE.BufferGeometry();
-        const warpLinePositions = new Float32Array(warpLinesCount * 2 * 3); 
-        const warpLineColors = new Float32Array(warpLinesCount * 2 * 3);
-
-        for (let i = 0; i < warpLinesCount; i++) {
-            const index = i * 6;
-            
-            const angle = Math.random() * Math.PI * 2;
-            const radius = 6 + Math.random() * 25;
-            const x = Math.sin(angle) * radius;
-            const y = Math.cos(angle) * radius;
-            const z = -50 - Math.random() * 100;
-
-            warpLinePositions[index] = x;
-            warpLinePositions[index + 1] = y;
-            warpLinePositions[index + 2] = z;
-
-            warpLinePositions[index + 3] = x;
-            warpLinePositions[index + 4] = y;
-            warpLinePositions[index + 5] = z + 5;
-
-            // CLAVE: Las líneas del Warp se configuran en color blanco puro brillante
-            warpLineColors[index] = 1.0; warpLineColors[index+1] = 1.0; warpLineColors[index+2] = 1.0;
-            warpLineColors[index+3] = 1.0; warpLineColors[index+4] = 1.0; warpLineColors[index+5] = 1.0;
-        }
-
-        warpLinesGeometry.setAttribute('position', new THREE.BufferAttribute(warpLinePositions, 3));
-        warpLinesGeometry.setAttribute('color', new THREE.BufferAttribute(warpLineColors, 3));
-
-        const warpLinesMaterial = new THREE.LineBasicMaterial({
-            vertexColors: true,
-            transparent: true,
-            opacity: 0, 
-            blending: THREE.AdditiveBlending,
-            linewidth: 2
-        });
-
-        const warpLinesField = new THREE.LineSegments(warpLinesGeometry, warpLinesMaterial);
-        scene.add(warpLinesField);
-
-
-        // --- SISTEMA DINÁMICO DE ESTRELLAS FUGACES ---
-        const maxShootingStars = 4;
-        const shootingStars = [];
-
-        const shootingStarMaterial = new THREE.LineBasicMaterial({
-            color: 0xffd2b1,
-            transparent: true,
-            opacity: 0,
-            blending: THREE.AdditiveBlending
-        });
-
-        for (let i = 0; i < maxShootingStars; i++) {
-            const lineGeom = new THREE.BufferGeometry();
-            const pts = new Float32Array(6); 
-            lineGeom.setAttribute('position', new THREE.BufferAttribute(pts, 3));
-            
-            const line = new THREE.Line(lineGeom, shootingStarMaterial.clone());
-            scene.add(line);
-
-            shootingStars.push({
-                mesh: line,
-                active: false,
-                startX: 0, startY: 0, startZ: 0,
-                endX: 0, endY: 0, endZ: 0,
-                progress: 0,
-                speed: 0
+        function createSpark(randomY = false) {
+            const size = 0.3 + Math.pow(Math.random(), 3.5) * 4.2;
+            sparks.push({
+                x: Math.random() * canvas.width,
+                y: randomY ? Math.random() * canvas.height : canvas.height + 10 + Math.random() * 30,
+                size: size,
+                alpha: 0.1 + Math.random() * 0.8,
+                fadeSpeed: 0.001 + Math.random() * 0.005,
+                speedY: -(0.3 + (4.5 - size) * 0.15 + Math.random() * 0.4), 
+                speedX: (Math.random() - 0.5) * 0.3, 
+                pulseSpeed: 0.03 + Math.random() * 0.07, 
+                pulseDir: Math.random() > 0.5 ? 1 : -1,
+                color: Math.random() > 0.25 ? 'rgba(255, 85, 51, ' : 'rgba(255, 180, 110, ' 
             });
         }
 
-        function triggerShootingStar(star) {
-            star.startX = (Math.random() - 0.5) * 60;
-            star.startY = 15 + Math.random() * 20;
-            star.startZ = -15 - Math.random() * 30;
-
-            star.endX = star.startX - 15 - Math.random() * 15;
-            star.endY = star.startY - 15 - Math.random() * 15;
-            star.endZ = star.startZ + (Math.random() - 0.5) * 5;
-
-            star.progress = 0;
-            star.speed = 0.025 + Math.random() * 0.035;
-            star.active = true;
-            star.mesh.material.opacity = 0.8;
-            star.mesh.material.color.setHex(Math.random() > 0.5 ? 0xfff5ea : 0xff7744);
-        }
-
-        // --- SISTEMA DEL COMETA ---
-        const cometGeometry = new THREE.BufferGeometry();
-        const cometPoints = new Float32Array(15 * 3); 
-        cometGeometry.setAttribute('position', new THREE.BufferAttribute(cometPoints, 3));
-
-        const cometMaterial = new THREE.LineBasicMaterial({
-            color: 0xffaa77,
-            transparent: true,
-            opacity: 0,
-            blending: THREE.AdditiveBlending,
-            linewidth: 2
-        });
-
-        const cometLine = new THREE.Line(cometGeometry, cometMaterial);
-        scene.add(cometLine);
-
-        const cometData = {
-            active: false,
-            x: 0, y: 0, z: 0,
-            dx: -0.05, dy: -0.02, dz: 0.01,
-            trail: Array(15).fill().map(() => new THREE.Vector3())
-        };
-
-        function triggerComet() {
-            cometData.x = 45;
-            cometData.y = 20;
-            cometData.z = -15;
-            cometData.active = true;
-            cometMaterial.opacity = 0.45;
-
-            for(let i = 0; i < 15; i++) {
-                cometData.trail[i].set(cometData.x, cometData.y, cometData.z);
-            }
-        }
-
-        setInterval(() => {
-            const inactiveStar = shootingStars.find(s => !s.active);
-            if (inactiveStar && Math.random() > 0.4) {
-                triggerShootingStar(inactiveStar);
-            }
-        }, 1500);
-
-        setInterval(() => {
-            if (!cometData.active && Math.random() > 0.5) {
-                triggerComet();
-            }
-        }, 11000);
-
-
-        // --- PLANETAS SECUNDARIOS ---
-        const createBluePlanetTexture = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 128;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#0a2e6b';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#4fa4de';
-            for (let i = 0; i < 15; i++) {
-                ctx.beginPath();
-                ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 10 + Math.random() * 20, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-            for (let i = 0; i < 8; i++) {
-                ctx.beginPath();
-                ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 15 + Math.random() * 25, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            return new THREE.CanvasTexture(canvas);
-        };
-
-        const createGasGiantTexture = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 128;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#c49564';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            for (let i = 0; i < canvas.height; i += 6) {
-                ctx.fillStyle = i % 12 === 0 ? '#8a562d' : '#edd2b1';
-                ctx.fillRect(0, i + Math.random() * 2, canvas.width, 3 + Math.random() * 4);
-            }
-            return new THREE.CanvasTexture(canvas);
-        };
-
-        const bluePlanetGeometry = new THREE.SphereGeometry(0.28, 32, 32); 
-        const bluePlanetMaterial = new THREE.MeshStandardMaterial({
-            map: createBluePlanetTexture(),
-            roughness: 0.5,
-            metalness: 0.2,
-            emissive: new THREE.Color('#104eb0'),
-            emissiveIntensity: 1.6
-        });
-        const bluePlanet = new THREE.Mesh(bluePlanetGeometry, bluePlanetMaterial);
-        bluePlanet.position.set(5.5, 3.5, -8); 
-        scene.add(bluePlanet);
-
-        const gasPlanetGeometry = new THREE.SphereGeometry(0.18, 32, 32); 
-        const gasPlanetMaterial = new THREE.MeshStandardMaterial({
-            map: createGasGiantTexture(),
-            roughness: 0.6,
-            metalness: 0.1,
-            emissive: new THREE.Color('#66411a'),
-            emissiveIntensity: 1.8 
-        });
-        const gasPlanet = new THREE.Mesh(gasPlanetGeometry, gasPlanetMaterial);
-        gasPlanet.position.set(-18.0, -9.0, -45); 
-        scene.add(gasPlanet);
-
-
-        // --- CREACIÓN DE MARTE ---
-        const planetGeometry = new THREE.SphereGeometry(2.2, 64, 64);
-        
-        const createSeamlessMarsTexture = () => {
-            const canvas = document.createElement('canvas');
-            const width = 1024;
-            const height = 512;
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
+        function drawGas() {
+            const isDayMode = document.body.classList.contains('day-mode');
             
-            ctx.fillStyle = '#9c311a';
-            ctx.fillRect(0, 0, width, height);
+            if (isDayMode) {
+                canvasCtx.fillStyle = '#f8fafc'; // Fondo Slate-50 en modo diurno para evitar reflejos
+            } else {
+                canvasCtx.fillStyle = '#060204'; // Fondo oscuro original
+            }
+            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const colors = ['#b83d1d', '#7d2310', '#c25330', '#631d0e', '#8a2b16', '#a3361c'];
+            const baseGrad = canvasCtx.createLinearGradient(0, canvas.height, 0, 0);
+            if (isDayMode) {
+                // Gradiente en azul eléctrico dinámico para el modo día
+                baseGrad.addColorStop(0, 'rgba(0, 82, 255, 0.12)');
+                baseGrad.addColorStop(0.5, 'rgba(0, 150, 255, 0.04)');
+            } else {
+                baseGrad.addColorStop(0, 'rgba(180, 55, 20, 0.15)');
+                baseGrad.addColorStop(0.5, 'rgba(235, 110, 50, 0.05)');
+            }
+            baseGrad.addColorStop(1, 'transparent');
+            canvasCtx.fillStyle = baseGrad;
+            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const drawSeamlessDetail = (x, y, r) => {
-                const colorDetail = colors[Math.floor(Math.random() * colors.length)];
+            for (let i = 0; i < gasClouds.length; i++) {
+                const gc = gasClouds[i];
                 
-                const drawCircle = (cx) => {
-                    const grad = ctx.createRadialGradient(cx, y, 0, cx, y, r);
-                    grad.addColorStop(0, colorDetail);
-                    grad.addColorStop(0.5, 'rgba(156, 49, 26, 0.4)');
-                    grad.addColorStop(1, 'transparent');
-                    ctx.fillStyle = grad;
-                    ctx.beginPath();
-                    ctx.arc(cx, y, r, 0, Math.PI * 2);
-                    ctx.fill();
-                };
+                const grad = canvasCtx.createRadialGradient(gc.x, gc.y, 0, gc.x, gc.y, gc.radius);
+                
+                // MULTIPLICADORES DE CONTRASTE OPTIMIZADOS PARA MÁXIMA VISIBILIDAD
+                // Aumentamos considerablemente los multiplicadores base (en modo día a 2.4 y en modo noche a 1.6)
+                const op = isDayMode ? gc.opacity * 2.4 : gc.opacity * 1.6; 
+                
+                // Mapeo dinámico de gas de naranja a azul eléctrico en modo día
+                let activeColor = gc.color;
+                if (isDayMode) {
+                    // Colores de plasma diurnos más profundos (azul eléctrico y zafiro oscuro) para mayor peso visual
+                    activeColor = gc.color.includes('235') ? 'rgba(0, 82, 255, ' : 'rgba(0, 120, 255, ';
+                }
+                
+                grad.addColorStop(0, `${activeColor}${op})`);
+                grad.addColorStop(0.4, `${activeColor}${op * 0.45})`);
+                grad.addColorStop(1, 'rgba(0,0,0,0)');
 
-                drawCircle(x);
+                canvasCtx.fillStyle = grad;
+                canvasCtx.beginPath();
+                canvasCtx.arc(gc.x, gc.y, gc.radius, 0, Math.PI * 2);
+                canvasCtx.fill();
 
-                if (x - r < 0) drawCircle(x + width);
-                if (x + r > width) drawCircle(x - width);
-            };
+                gc.y += gc.speedY;
+                gc.x += gc.speedX;
 
-            for (let i = 0; i < 400; i++) {
-                const x = Math.random() * width;
-                const y = Math.random() * height;
-                const r = 25 + Math.random() * 75;
-                drawSeamlessDetail(x, y, r);
+                if (gc.y + gc.radius < 0) {
+                    gc.y = canvas.height + gc.radius;
+                    gc.x = Math.random() * canvas.width;
+                    gc.radius = 200 + Math.random() * 250;
+                    gc.opacity = 0.03 + Math.random() * 0.06;
+                }
             }
 
-            const edgeGrad = ctx.createLinearGradient(0, 0, width, 0);
-            edgeGrad.addColorStop(0, '#9c311a');
-            edgeGrad.addColorStop(0.04, 'transparent');
-            edgeGrad.addColorStop(0.96, 'transparent');
-            edgeGrad.addColorStop(1, '#9c311a');
-            ctx.save();
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.fillStyle = edgeGrad;
-            ctx.fillRect(0, 0, width, height);
-            ctx.restore();
+            for (let i = sparks.length - 1; i >= 0; i--) {
+                const s = sparks[i];
 
-            const polarGrad = ctx.createLinearGradient(0, 0, 0, 80);
-            polarGrad.addColorStop(0, 'rgba(240, 245, 255, 0.85)');
-            polarGrad.addColorStop(1, 'transparent');
-            ctx.fillStyle = polarGrad;
-            ctx.fillRect(0, 0, width, 80);
+                canvasCtx.beginPath();
+                canvasCtx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                
+                // Incrementamos la opacidad de los destellos/chispas estelares (1.2 en modo día, 1.0 en modo noche)
+                const alphaVal = isDayMode ? s.alpha * 1.2 : s.alpha;
+                
+                // Mapeo dinámico de chispas a azul eléctrico y cyan en modo diurno
+                let activeColor = s.color;
+                if (isDayMode) {
+                    activeColor = s.color.includes('85') ? 'rgba(0, 82, 255, ' : 'rgba(0, 190, 255, ';
+                }
+                
+                canvasCtx.fillStyle = `${activeColor}${alphaVal})`;
+                
+                if (!isDayMode) {
+                    canvasCtx.shadowColor = '#ff5533';
+                    canvasCtx.shadowBlur = s.size * 2.5; 
+                } else {
+                    canvasCtx.shadowBlur = 0; 
+                }
+                canvasCtx.fill();
+                canvasCtx.shadowBlur = 0; 
 
-            const polarSouthGrad = ctx.createLinearGradient(0, height, 0, height - 50);
-            polarSouthGrad.addColorStop(0, 'rgba(235, 240, 255, 0.7)');
-            polarSouthGrad.addColorStop(1, 'transparent');
-            ctx.fillStyle = polarSouthGrad;
-            ctx.fillRect(0, height - 50, width, 50);
+                s.y += s.speedY;
+                s.x += s.speedX;
 
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.wrapS = THREE.RepeatWrapping;
-            texture.wrapT = THREE.ClampToEdgeWrapping;
-            
-            texture.generateMipmaps = false;
-            texture.minFilter = THREE.LinearFilter;
-            
-            return texture;
-        };
+                s.alpha += s.pulseSpeed * s.pulseDir;
+                if (s.alpha > 0.9) {
+                    s.alpha = 0.9;
+                    s.pulseDir = -1;
+                } else if (s.alpha < 0.15) {
+                    s.alpha = 0.15;
+                    s.pulseDir = 1;
+                }
 
-        const marsTexture = createSeamlessMarsTexture();
+                s.alpha -= s.fadeSpeed;
 
-        const planetMaterial = new THREE.MeshStandardMaterial({
-            map: marsTexture,
-            roughness: 0.85,
-            metalness: 0.05,
-            bumpScale: 0.08
-        });
-
-        const mars = new THREE.Mesh(planetGeometry, planetMaterial);
-        scene.add(mars);
-
-
-        // --- CAPA DE TORMENTAS DE POLVO (CORREGIDA LA RECURSIÓN) ---
-        const stormGeometry = new THREE.SphereGeometry(2.215, 64, 64);
-
-        const createSeamlessStormTexture = () => {
-            const canvas = document.createElement('canvas');
-            const width = 1024;
-            const height = 512;
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            
-            ctx.clearRect(0, 0, width, height);
-
-            const drawStormBand = (x, y, rx, ry, opacity) => {
-                const drawEllipse = (cx) => {
-                    const grad = ctx.createRadialGradient(cx, y, 0, cx, y, rx);
-                    grad.addColorStop(0, `rgba(235, 150, 90, ${opacity})`);
-                    grad.addColorStop(0.5, `rgba(210, 110, 60, ${opacity * 0.5})`);
-                    grad.addColorStop(1, 'transparent');
-                    
-                    ctx.fillStyle = grad;
-                    ctx.beginPath();
-                    ctx.save();
-                    ctx.translate(cx, y);
-                    ctx.scale(1, ry / rx);
-                    ctx.arc(0, 0, rx, 0, Math.PI * 2);
-                    ctx.restore();
-                    ctx.fill();
-                };
-
-                // SOLUCIÓN AL ERROR DE RECURSIÓN: Llamamos a la función de dibujo local drawEllipse
-                drawEllipse(x);
-                if (x - rx < 0) drawEllipse(x + width);
-                if (x + rx > width) drawEllipse(x - width);
-            };
-
-            for (let i = 0; i < 45; i++) {
-                const x = Math.random() * width;
-                const y = 100 + Math.random() * 312;
-                const rx = 80 + Math.random() * 150;
-                const ry = 25 + Math.random() * 50;
-                const opacity = 0.2 + Math.random() * 0.35;
-                drawStormBand(x, y, rx, ry, opacity);
+                if (s.y < -10 || s.alpha <= 0) {
+                    sparks.splice(i, 1);
+                    createSpark(false);
+                }
             }
 
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.wrapS = THREE.RepeatWrapping;
-            texture.wrapT = THREE.ClampToEdgeWrapping;
+            requestAnimationFrame(drawGas);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        drawGas();
+
+
+        // --- 4. REPRODUCTOR DE EXPANSIÓN A MEDIA PANTALLA ---
+        const modal = document.getElementById('video-modal');
+        const modalIframe = document.getElementById('modal-iframe');
+        const modalTitle = document.getElementById('modal-title');
+        const modalStudent = document.getElementById('modal-student');
+        const modalClose = document.getElementById('modal-close');
+
+        function openWarpModal(student, title, videoId) {
+            modalTitle.innerText = title;
+            modalStudent.innerText = student;
             
-            texture.generateMipmaps = false;
-            texture.minFilter = THREE.LinearFilter;
+            // CLAVE: Forzamos la reproducción en calidad Full HD 1080p inyectando los parámetros de calidad vq=hd1080&hd=1&t=1s
+            modalIframe.src = `https://drive.google.com/file/d/${videoId}/preview?vq=hd1080&hd=1&t=1s`;
             
-            return texture;
-        };
+            modal.classList.add('active');
+            
+            if (audioCtx) {
+                playClickSound();
+            }
+        }
 
-        const stormTexture = createSeamlessStormTexture();
-        const stormMaterial = new THREE.MeshStandardMaterial({
-            map: stormTexture,
-            transparent: true,
-            opacity: 0.85,
-            roughness: 0.6,
-            metalness: 0.1,
-            blending: THREE.NormalBlending
-        });
+        function closeWarpModal() {
+            modalIframe.src = ""; 
+            modal.classList.remove('active');
+            
+            if (audioCtx) {
+                playClickSound();
+            }
+        }
 
-        const stormLayer = new THREE.Mesh(stormGeometry, stormMaterial);
-        scene.add(stormLayer);
-
-
-        // --- ATMÓSFERA EXTERIOR ---
-        const atmosphereGeometry = new THREE.SphereGeometry(2.26, 32, 32);
-        const atmosphereMaterial = new THREE.MeshBasicMaterial({
-            color: 0xff3a0c,
-            transparent: true,
-            opacity: 0.18,
-            side: THREE.BackSide
-        });
-        const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
-        scene.add(atmosphere);
-
-
-        // --- CONFIGURACIÓN DE ILUMINACIÓN ESPACIAL ---
-        const ambientLight = new THREE.AmbientLight(0x220e0a, 0.85);
-        scene.add(ambientLight);
-
-        const sunLight = new THREE.DirectionalLight(0xfff5ea, 2.5);
-        sunLight.position.set(12, 4, 15);
-        scene.add(sunLight);
-
-        const fillLight = new THREE.DirectionalLight(0x2244aa, 0.45);
-        fillLight.position.set(-15, -5, -10);
-        scene.add(fillLight);
-
-        // --- SISTEMA DE VIAJE Y CONTROL DE ESTADOS ---
-        camera.position.set(0, 0, 85); 
-
-        let introFinished = false;
-        let isTransitioning = false;
-        let warpSpeed = 0.01; 
-
-        const targetZ = 5.2; 
-        const speedFactor = 0.007; 
-
-        const mouse = new THREE.Vector2();
-        const targetRotation = new THREE.Vector2();
-        const raycaster = new THREE.Raycaster();
-
-        // --- LÓGICA DE COORDENADAS PARA LA MIRA INTERACTIVA ---
-        const hintEl = document.getElementById('planet-hint');
-        const hudPanel = document.getElementById('hud-panel');
-        const warningText = document.getElementById('warning-text');
-        const coordsText = document.getElementById('coords-text');
-        const scannerText = document.getElementById('scanner-text');
+        modalClose.addEventListener('click', closeWarpModal);
         
-        let hintX = window.innerWidth / 2;
-        let hintY = window.innerHeight / 2;
-        let targetHintX = window.innerWidth / 2;
-        let targetHintY = window.innerHeight / 2;
-        let isHoveringPlanet = false;
-        let systemsArmed = false; 
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeWarpModal();
+            }
+        });
 
 
-        // --- SINTETIZADOR DE MÚSICA Y AMBIENTE DE NAVE ESPACIAL ---
+        // --- 5. GENERADOR DE SONIDOS SUTILES DE INTERFAZ (WEB AUDIO API) ---
         let audioCtx = null;
-        let masterGain = null;
-        let musicStarted = false;
 
         function getAudioContext() {
             if (!audioCtx) {
@@ -990,1046 +1154,101 @@
             return audioCtx;
         }
 
-        function startSpaceMusic() {
-            if (musicStarted) return; 
-
-            const ctxAudio = getAudioContext();
-            masterGain = ctxAudio.createGain();
-            masterGain.gain.setValueAtTime(0.0, ctxAudio.currentTime);
-            masterGain.gain.linearRampToValueAtTime(0.25, ctxAudio.currentTime + 2.5);
-            masterGain.connect(ctxAudio.destination);
-
-            // 1. Zumbido de cabina / Motores auxiliares
-            const engineOsc = ctxAudio.createOscillator();
-            const cabinOsc = ctxAudio.createOscillator();
-            const cabinFilter = ctxAudio.createBiquadFilter();
-
-            engineOsc.type = 'triangle';
-            engineOsc.frequency.setValueAtTime(38.0, ctxAudio.currentTime); 
-
-            cabinOsc.type = 'sawtooth';
-            cabinOsc.frequency.setValueAtTime(80.0, ctxAudio.currentTime); 
-
-            cabinFilter.type = 'lowpass';
-            cabinFilter.frequency.setValueAtTime(95, ctxAudio.currentTime); 
-
-            const engineGain = ctxAudio.createGain();
-            engineGain.gain.setValueAtTime(0.06, ctxAudio.currentTime); 
-
-            engineOsc.connect(cabinFilter);
-            cabinOsc.connect(cabinFilter);
-            cabinFilter.connect(engineGain);
-            engineGain.connect(masterGain);
-
-            engineOsc.start();
-            cabinOsc.start();
-
-            // 2. Ruido blanco filtrado (Flujo de aire)
-            const bufferSize = ctxAudio.sampleRate * 2;
-            const noiseBuffer = ctxAudio.createBuffer(1, bufferSize, ctxAudio.sampleRate);
-            const output = noiseBuffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) {
-                output[i] = Math.random() * 2 - 1;
-            }
-            const whiteNoise = ctxAudio.createBufferSource();
-            whiteNoise.buffer = noiseBuffer;
-            whiteNoise.loop = true;
-
-            const airFilter = ctxAudio.createBiquadFilter();
-            airFilter.type = 'bandpass';
-            airFilter.frequency.setValueAtTime(260, ctxAudio.currentTime);
-            airFilter.Q.setValueAtTime(1.1, ctxAudio.currentTime);
-
-            const airGain = ctxAudio.createGain();
-            airGain.gain.setValueAtTime(0.08, ctxAudio.currentTime); 
-
-            whiteNoise.connect(airFilter);
-            airFilter.connect(airGain);
-            airGain.connect(masterGain);
-            whiteNoise.start();
-
-            // 3. Drone cósmico modulado
-            const baseDrone = ctxAudio.createOscillator();
-            const droneFilter = ctxAudio.createBiquadFilter();
-
-            baseDrone.type = 'sine';
-            baseDrone.frequency.setValueAtTime(110.0, ctxAudio.currentTime); 
-
-            droneFilter.type = 'lowpass';
-            droneFilter.frequency.setValueAtTime(130, ctxAudio.currentTime);
-
-            const droneGain = ctxAudio.createGain();
-            droneGain.gain.setValueAtTime(0.12, ctxAudio.currentTime); 
-
-            const lfo = ctxAudio.createOscillator();
-            const lfoGain = ctxAudio.createGain();
-            lfo.frequency.value = 0.05; 
-            lfoGain.gain.value = 50;
-
-            lfo.connect(lfoGain);
-            lfoGain.connect(droneFilter.frequency);
-
-            baseDrone.connect(droneFilter);
-            droneFilter.connect(droneGain);
-            droneGain.connect(masterGain);
-
-            baseDrone.start();
-            lfo.start();
-
-            // 4. Pitidos de consola de telemetría (SUTILES, CÁLIDOS Y MATIZADOS PARA EVITAR DAÑOS)
-            function playConsoleTelemetry() {
-                if (isTransitioning) return; 
-
-                const pingOsc = ctxAudio.createOscillator();
-                const pingGain = ctxAudio.createGain();
-
-                const isClick = Math.random() > 0.6;
-                pingOsc.type = 'sine';
-                
-                if (isClick) {
-                    pingOsc.frequency.setValueAtTime(110, ctxAudio.currentTime); // Frecuencia baja cálida
-                    pingGain.gain.setValueAtTime(0.03, ctxAudio.currentTime);
-                    pingGain.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + 0.08);
-                } else {
-                    // CLAVE: Frecuencias matizadas reducidas significativamente (520-880Hz en lugar de los agudos molestos)
-                    const freqs = [520, 580, 660, 780, 880]; 
-                    const randomFreq = freqs[Math.floor(Math.random() * freqs.length)];
-                    pingOsc.frequency.setValueAtTime(randomFreq, ctxAudio.currentTime);
-                    
-                    // Volumen amortiguado al mínimo absoluto para una acústica de fondo placentera
-                    pingGain.gain.setValueAtTime(0.004, ctxAudio.currentTime); 
-                    pingGain.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + 0.3);
-                }
-
-                pingOsc.connect(pingGain);
-                pingGain.connect(masterGain);
-
-                pingOsc.start();
-                pingOsc.stop(ctxAudio.currentTime + 0.5);
-                
-                // Limpieza de nodo al finalizar
-                pingOsc.onended = () => {
-                    pingOsc.disconnect();
-                    pingGain.disconnect();
-                };
-            }
-
-            setInterval(() => {
-                const repetitions = Math.floor(Math.random() * 4) + 1; 
-                for (let i = 0; i < repetitions; i++) {
-                    setTimeout(playConsoleTelemetry, i * 140);
-                }
-            }, 2200);
-
-            // 5. Destellos armónicos (CÁLIDOS Y FILTRADOS CON LOWPASS)
-            const notes = [220, 261.63, 329.63, 392, 440]; 
-
-            function playSpaceSparkle() {
-                if (isTransitioning) return; 
-
-                const sparkleOsc = ctxAudio.createOscillator();
-                const sparkleGain = ctxAudio.createGain();
-                const sparkleFilter = ctxAudio.createBiquadFilter();
-
-                sparkleOsc.type = 'sine';
-                const randomNote = notes[Math.floor(Math.random() * notes.length)];
-                sparkleOsc.frequency.setValueAtTime(randomNote, ctxAudio.currentTime);
-
-                // Filtro paso bajo para recortar cualquier frecuencia aguda y suavizar el armónico
-                sparkleFilter.type = 'lowpass';
-                sparkleFilter.frequency.setValueAtTime(400, ctxAudio.currentTime);
-
-                sparkleGain.gain.setValueAtTime(0.0, ctxAudio.currentTime);
-                sparkleGain.gain.linearRampToValueAtTime(0.01, ctxAudio.currentTime + 1.5); // Amplitud muy sutil
-                sparkleGain.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + 6.0); 
-
-                sparkleOsc.connect(sparkleFilter);
-                sparkleFilter.connect(sparkleGain);
-                sparkleFilter.connect(masterGain);
-
-                sparkleOsc.start();
-                sparkleOsc.stop(ctxAudio.currentTime + 6.1);
-
-                sparkleOsc.onended = () => {
-                    sparkleOsc.disconnect();
-                    sparkleFilter.disconnect();
-                    sparkleGain.disconnect();
-                };
-            }
-
-            setInterval(playSpaceSparkle, 4200);
-
-            musicStarted = true;
-        }
-
-        // --- REPRODUCCIÓN FÍSICA DE BIP DE INTERFAZ E EFECTO WARP ---
-        // CLAVE: Matizado y suavizado a 320Hz con menor volumen para evitar molestias al hacer clic
-        function playClickSound() {
+        function playCardHoverSound(frequency = 1400) {
             const ctxAudio = getAudioContext();
             if (!ctxAudio) return;
+
+            if (ctxAudio.state === 'suspended') {
+                ctxAudio.resume().then(() => {
+                    triggerOscillator(ctxAudio, frequency);
+                }).catch(() => {});
+            } else if (ctxAudio.state === 'running') {
+                triggerOscillator(ctxAudio, frequency);
+            }
+        }
+
+        function triggerOscillator(ctxAudio, frequency) {
+            const osc = ctxAudio.createOscillator();
+            const gainNode = ctxAudio.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(frequency, ctxAudio.currentTime); 
+
+            gainNode.gain.setValueAtTime(0.0, ctxAudio.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.005, ctxAudio.currentTime + 0.01); 
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + 0.15); 
+
+            osc.connect(gainNode);
+            gainNode.connect(ctxAudio.destination);
+
+            osc.start();
+            osc.stop(ctxAudio.currentTime + 0.15);
+        }
+
+        function playClickSound() {
+            const ctxAudio = getAudioContext();
+            if (!ctxAudio || ctxAudio.state !== 'running') return;
 
             const osc = ctxAudio.createOscillator();
             const gainNode = ctxAudio.createGain();
 
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(320, ctxAudio.currentTime); // Pitch mucho más cálido y grave
+            osc.frequency.setValueAtTime(450, ctxAudio.currentTime); 
 
             gainNode.gain.setValueAtTime(0.0, ctxAudio.currentTime);
-            gainNode.gain.linearRampToValueAtTime(0.025, ctxAudio.currentTime + 0.01); // Amplitud rebajada
-            gainNode.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + 0.25);
+            gainNode.gain.linearRampToValueAtTime(0.03, ctxAudio.currentTime + 0.01);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + 0.3);
 
             osc.connect(gainNode);
             gainNode.connect(ctxAudio.destination);
 
             osc.start();
-            osc.stop(ctxAudio.currentTime + 0.3);
-
-            osc.onended = () => {
-                osc.disconnect();
-                gainNode.disconnect();
-            };
+            osc.stop(ctxAudio.currentTime + 0.35);
         }
 
-        // --- SISTEMA DE SINTETIZADOR DE AMARTIZAJE (IGNICIÓN Y SUBIDAS DE POTENCIA) ---
-        // CLAVE: El sonido simula de forma espectacular unos motores que ganan potencia (frecuencia y ganancia ascendente)
-        function playWarpSound() {
-            const ctxAudio = getAudioContext();
-            if (!ctxAudio) return;
-
-            const osc = ctxAudio.createOscillator();
-            const subOsc = ctxAudio.createOscillator();
-            const gainNode = ctxAudio.createGain();
-
-            osc.type = 'sawtooth';
-            subOsc.type = 'triangle';
-
-            // Frecuencias ascendentes para emular motores acelerando a fondo (ignición)
-            osc.frequency.setValueAtTime(60, ctxAudio.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(950, ctxAudio.currentTime + 0.95);
-
-            subOsc.frequency.setValueAtTime(35, ctxAudio.currentTime);
-            subOsc.frequency.exponentialRampToValueAtTime(240, ctxAudio.currentTime + 0.95);
-
-            // Aumento de ganancia progresivo (acumulando energía de propulsor)
-            gainNode.gain.setValueAtTime(0.001, ctxAudio.currentTime);
-            gainNode.gain.linearRampToValueAtTime(0.18, ctxAudio.currentTime + 0.75);
-            gainNode.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + 0.98);
-
-            osc.connect(gainNode);
-            subOsc.connect(gainNode);
-            gainNode.connect(ctxAudio.destination);
-
-            osc.start();
-            subOsc.start();
-            
-            osc.stop(ctxAudio.currentTime + 1.0);
-            subOsc.stop(ctxAudio.currentTime + 1.0);
-
-            osc.onended = () => {
-                osc.disconnect();
-                subOsc.disconnect();
-                gainNode.disconnect();
-            };
-        }
-
-        // --- SISTEMA DE FLUCTUACIÓN DE COORDENADAS HUD EN TIEMPO REAL ---
-        setInterval(() => {
-            if (isTransitioning) return;
-            // Fluctúan levemente las décimas de latitud y longitud para simular telemetría real de vuelo
-            const latSeconds = (15 + Math.random() * 8).toFixed(2);
-            const lonSeconds = (48 + Math.random() * 11).toFixed(2);
-            const altitude = (420 + Math.random() * 3).toFixed(2);
-
-            coordsText.innerHTML = `
-                LAT: 12° 24' ${latSeconds}" S<br>
-                LON: 34° 56' ${lonSeconds}" E<br>
-                ALT: ${altitude} km
-            `;
-        }, 800);
-
-
-        // --- 🗺️ LÓGICA DE DIBUJO DEL MAPA HUD EN 2D ---
-        const marsMapCanvas = document.getElementById('hud-mars-map');
-        const mapCtx = marsMapCanvas.getContext('2d');
-        const mapCoordsText = document.getElementById('hud-map-coords-text');
-        const mapStatusLabel = document.getElementById('hud-map-status-label');
-
-        // Valores de seguimiento del puntero sobre la textura (U, V)
-        let mapTargetU = 0.5;
-        let mapTargetV = 0.5;
-        let isTrackingPlanet = false;
-
-        // Suave interpolación para que el puntero se desplace elegantemente en el 2D
-        let mapCurrentU = 0.5;
-        let mapCurrentV = 0.5;
-
-        function renderMarsHoloMap() {
-            // Limpieza con sutil tono rojizo técnico
-            mapCtx.fillStyle = '#080103';
-            mapCtx.fillRect(0, 0, marsMapCanvas.width, marsMapCanvas.height);
-
-            // Dibujar rejilla del radar técnico
-            mapCtx.strokeStyle = 'rgba(255, 85, 51, 0.05)';
-            mapCtx.lineWidth = 0.5;
-            for (let x = 0; x < marsMapCanvas.width; x += 15) {
-                mapCtx.beginPath();
-                mapCtx.moveTo(x, 0);
-                mapCtx.lineTo(x, marsMapCanvas.height);
-                mapCtx.stroke();
-            }
-            for (let y = 0; y < marsMapCanvas.height; y += 15) {
-                mapCtx.beginPath();
-                mapCtx.moveTo(0, y);
-                mapCtx.lineTo(marsMapCanvas.width, y);
-                mapCtx.stroke();
-            }
-
-            // Dibujar siluetas esquemáticas simplificadas de la topografía marciana (Holograma de puntos)
-            mapCtx.strokeStyle = 'rgba(255, 85, 51, 0.15)';
-            mapCtx.lineWidth = 1;
-            
-            // Olympus Mons (Concéntrico)
-            mapCtx.beginPath();
-            mapCtx.arc(40, 45, 12, 0, Math.PI * 2);
-            mapCtx.stroke();
-            mapCtx.beginPath();
-            mapCtx.arc(40, 45, 6, 0, Math.PI * 2);
-            mapCtx.stroke();
-
-            // Valles Marineris (Fisura geológica lineal)
-            mapCtx.beginPath();
-            mapCtx.moveTo(70, 52);
-            mapCtx.lineTo(110, 55);
-            mapCtx.lineTo(135, 50);
-            mapCtx.stroke();
-
-            // Hellas Planitia (Gran cuenca circular del sur)
-            mapCtx.beginPath();
-            mapCtx.arc(145, 75, 18, 0, Math.PI * 2);
-            mapCtx.stroke();
-
-            // Suave interpolación hacia el objetivo actual de escaneo
-            mapCurrentU = THREE.MathUtils.lerp(mapCurrentU, mapTargetU, 0.1);
-            mapCurrentV = THREE.MathUtils.lerp(mapCurrentV, mapTargetV, 0.1);
-
-            const mapX = mapCurrentU * marsMapCanvas.width;
-            const mapY = (1 - mapCurrentV) * marsMapCanvas.height; // El eje Y de Three.js UV es opuesto al Canvas 2D
-
-            // Dibujar el punto de rastreo láser parpadeante
-            mapCtx.fillStyle = isTrackingPlanet ? '#ff3a0c' : 'rgba(255, 85, 51, 0.4)';
-            mapCtx.beginPath();
-            mapCtx.arc(mapX, mapY, 3, 0, Math.PI * 2);
-            mapCtx.fill();
-
-            // Círculo de mira exterior del radar (blinking)
-            mapCtx.strokeStyle = isTrackingPlanet ? '#ff5533' : 'rgba(255, 85, 51, 0.2)';
-            mapCtx.lineWidth = 1;
-            mapCtx.beginPath();
-            const pulseRadius = 5 + Math.sin(Date.now() * 0.008) * 3;
-            mapCtx.arc(mapX, mapY, pulseRadius, 0, Math.PI * 2);
-            mapCtx.stroke();
-
-            // Cruz militar de apuntado HUD
-            mapCtx.strokeStyle = isTrackingPlanet ? '#ff5533' : 'rgba(255, 85, 51, 0.15)';
-            mapCtx.beginPath();
-            mapCtx.moveTo(mapX - 8, mapY); mapCtx.lineTo(mapX + 8, mapY);
-            mapCtx.moveTo(mapX, mapY - 8); mapCtx.lineTo(mapX, mapY + 8);
-            mapCtx.stroke();
-
-            // Actualizar cuadro de telemetría geográfica real de Marte
-            if (isTrackingPlanet) {
-                // Cálculo de latitud y longitud real basados en las coordenadas UV de Marte
-                const latDeg = Math.floor((mapTargetV - 0.5) * 180);
-                const lonDeg = Math.floor((mapTargetU - 0.5) * 360);
-                
-                const latLabel = latDeg >= 0 ? `${latDeg}° N` : `${Math.abs(latDeg)}° S`;
-                const lonLabel = lonDeg >= 0 ? `${lonDeg}° E` : `${Math.abs(lonDeg)}° O`;
-
-                mapCoordsText.innerHTML = `
-                    TRACKING: LOCK_TARGET<br>
-                    COORDS: ${latLabel} / ${lonLabel}
-                `;
-                mapStatusLabel.innerText = "LOCK";
-                mapStatusLabel.style.color = "#ff3a0c";
-            } else {
-                mapCoordsText.innerHTML = `
-                    TRACKING: OFF_RANGE<br>
-                    COORDS: --° --' N / --° --' E
-                `;
-                mapStatusLabel.innerText = "SCANNING";
-                mapStatusLabel.style.color = "rgba(255, 85, 51, 0.6)";
-            }
-        }
-
-
-        // --- BUCLE DE ANIMACIÓN (LOOP) ---
-        function animate() {
-            requestAnimationFrame(animate);
-
-            if (!isTransitioning) {
-                // Rotaciones normales de Marte y estrellas
-                mars.rotation.y += 0.0016;
-                stormLayer.rotation.y -= 0.0028;
-                stormLayer.rotation.x = Math.sin(Date.now() * 0.0001) * 0.03;
-
-                atmosphere.rotation.y += 0.0016;
-                
-                bluePlanet.rotation.y += 0.0012;
-                gasPlanet.rotation.y -= 0.0009;
-                starField.rotation.y += 0.00008;
-
-                // Estrellas fugaces
-                for (let i = 0; i < shootingStars.length; i++) {
-                    const s = shootingStars[i];
-                    if (s.active) {
-                        s.progress += s.speed;
-                        
-                        const x = THREE.MathUtils.lerp(s.startX, s.endX, s.progress);
-                        const y = THREE.MathUtils.lerp(s.startY, s.endY, s.progress);
-                        const z = THREE.MathUtils.lerp(s.startZ, s.endZ, s.progress);
-
-                        const prevProgress = Math.max(0, s.progress - 0.08);
-                        const px = THREE.MathUtils.lerp(s.startX, s.endX, prevProgress);
-                        const py = THREE.MathUtils.lerp(s.startY, s.endY, prevProgress);
-                        const pz = THREE.MathUtils.lerp(s.startZ, s.endZ, prevProgress);
-
-                        const positions = s.mesh.geometry.attributes.position.array;
-                        positions[0] = px; positions[1] = py; positions[2] = pz;
-                        positions[3] = x;  positions[4] = y;  positions[5] = z;
-                        s.mesh.geometry.attributes.position.needsUpdate = true;
-
-                        if (s.progress >= 1.0) {
-                            s.mesh.material.opacity -= 0.08;
-                            if (s.mesh.material.opacity <= 0) {
-                                s.active = false;
-                            }
-                        }
-                    }
-                }
-
-                // Cometa sutil
-                if (cometData.active) {
-                    cometData.x += cometData.dx;
-                    cometData.y += cometData.dy;
-                    cometData.z += cometData.dz;
-
-                    cometData.trail.unshift(new THREE.Vector3(cometData.x, cometData.y, cometData.z));
-                    cometData.trail.pop();
-
-                    const positions = cometLine.geometry.attributes.position.array;
-                    for(let i = 0; i < 15; i++) {
-                        positions[i*3] = cometData.trail[i].x;
-                        positions[i*3+1] = cometData.trail[i].y;
-                        positions[i*3+2] = cometData.trail[i].z;
-                    }
-                    cometLine.geometry.attributes.position.needsUpdate = true;
-
-                    if (cometData.x < -45) {
-                        cometData.active = false;
-                        cometMaterial.opacity = 0;
-                    }
-                }
-
-                if (!introFinished) {
-                    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, speedFactor);
-                    mars.rotation.y += (targetZ / camera.position.z) * 0.003;
-
-                    if (Math.abs(camera.position.z - targetZ) < 0.05) {
-                        camera.position.z = targetZ;
-                        introFinished = true;
-                        hintEl.style.opacity = '1';
-                    }
-                } else {
-                    mars.rotation.x = THREE.MathUtils.lerp(mars.rotation.x, targetRotation.y * 0.12, 0.05);
-                    stormLayer.rotation.x = THREE.MathUtils.lerp(stormLayer.rotation.x, targetRotation.y * 0.12, 0.05);
-
-                    raycaster.setFromCamera(mouse, camera);
-                    const intersects = raycaster.intersectObjects([mars, stormLayer]);
-
-                    isHoveringPlanet = intersects.length > 0;
-
-                    if (isHoveringPlanet) {
-                        hintX = THREE.MathUtils.lerp(hintX, targetHintX, 0.15);
-                        hintY = THREE.MathUtils.lerp(hintY, targetHintY, 0.15);
-                        hintEl.style.borderColor = '#ff3a0c';
-                        hintEl.style.borderStyle = 'solid'; 
-                        hintEl.style.transform = 'translate(-50%, -50%) scale(1.1)';
-
-                        // Feedback activo de escáner en el HUD
-                        scannerText.innerHTML = `
-                            SCANNER: LOCKING TARGET...<br>
-                            ATMOSPHERE: CO2 95% // TEMP: -63 °C<br>
-                            LANDING SYSTEM: READY [CLICK]
-                        `;
-                        scannerText.style.color = '#ff3a0c';
-                        scannerText.style.textShadow = '0 0 5px rgba(255, 58, 12, 0.5)';
-
-                        // Extraer coordenadas UV de la colisión para el mapa holográfico 2D
-                        const intersect = intersects[0];
-                        if (intersect.uv) {
-                            mapTargetU = intersect.uv.x;
-                            mapTargetV = intersect.uv.y;
-                            isTrackingPlanet = true;
-                        }
-                    } else {
-                        hintX = THREE.MathUtils.lerp(hintX, window.innerWidth / 2, 0.15);
-                        hintY = THREE.MathUtils.lerp(hintY, window.innerHeight / 2, 0.15);
-                        hintEl.style.borderColor = 'rgba(255, 85, 51, 0.5)';
-                        hintEl.style.borderStyle = 'dashed'; 
-                        hintEl.style.transform = 'translate(-50%, -50%) scale(1.0)';
-
-                        scannerText.innerHTML = `
-                            SCANNER: STANDBY<br>
-                            ATMOSPHERE: CO2 95%<br>
-                            TEMP: -63 °C
-                        `;
-                        scannerText.style.color = 'rgba(255, 85, 51, 0.5)';
-                        scannerText.style.textShadow = 'none';
-
-                        // Movimiento de deriva lento (scanning drift) si el cursor sale del planeta
-                        isTrackingPlanet = false;
-                        mapTargetU = 0.5 + Math.sin(Date.now() * 0.001) * 0.25;
-                        mapTargetV = 0.5 + Math.cos(Date.now() * 0.001) * 0.15;
-                    }
-
-                    hintEl.style.left = `${hintX}px`;
-                    hintEl.style.top = `${hintY}px`;
-                }
-
-                // Renderizamos la telemetría del mapa 2D en cada frame
-                renderMarsHoloMap();
-
-            } else {
-                // --- EFECTO DE TRANSICIÓN DE AMARTIZAJE / IMPULSO ACELERADO ---
-                warpSpeed += 0.035; 
-
-                // CLAVE 1: Disminuimos el campo de visión (FOV) para crear un zoom de velocidad telescópico brutal hacia adelante
-                camera.fov = THREE.MathUtils.lerp(camera.fov, 40, 0.05); 
-                camera.updateProjectionMatrix();
-
-                // CLAVE 2: Lanzamos la cámara a gran velocidad directamente a traspasar el planeta (Z = -1.5) hundiéndonos en su núcleo
-                camera.position.z = Math.max(-1.5, camera.position.z - warpSpeed * 10.0);
-                camera.position.x = THREE.MathUtils.lerp(camera.position.x, 0, 0.1);
-                camera.position.y = THREE.MathUtils.lerp(camera.position.y, 0, 0.1);
-
-                scene.fog.color.setHex(0x9c311a);
-                scene.fog.density = THREE.MathUtils.lerp(scene.fog.density, 1.25, 0.04); 
-
-                mars.rotation.y += 0.045;
-                stormLayer.rotation.y -= 0.055;
-
-                starField.material.opacity = THREE.MathUtils.lerp(starField.material.opacity, 0.05, 0.06);
-
-                warpLinesMaterial.opacity = THREE.MathUtils.lerp(warpLinesMaterial.opacity, 0.55, 0.06);
-
-                const linePositions = warpLinesField.geometry.attributes.position.array;
-                for (let i = 0; i < linePositions.length; i += 6) {
-                    linePositions[i + 2] += warpSpeed * 6.5; 
-                    linePositions[i + 5] += warpSpeed * 6.5; 
-
-                    const lineLength = warpSpeed * 12.0; 
-                    linePositions[i + 5] = linePositions[i + 2] + lineLength;
-
-                    if (linePositions[i + 2] > 20) {
-                        linePositions[i + 2] = -150;
-                        linePositions[i + 5] = -150 + lineLength;
-                    }
-                }
-                warpLinesField.geometry.attributes.position.needsUpdate = true;
-            }
-
-            renderer.render(scene, camera);
-        }
-
-        animate();
-
-        // --- EVENTOS E INTERACTIVIDAD ---
-
-        window.addEventListener('mousemove', (event) => {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-            targetRotation.x = mouse.x;
-            targetRotation.y = -mouse.y;
-
-            targetHintX = event.clientX;
-            targetHintY = event.clientY;
-        });
-
-        // Evento click unificado de doble fase (Armar sistemas / Iniciar viaje)
-        window.addEventListener('click', (event) => {
-            // Evitamos que el click en Marte se dispare si interactuamos con botones HUD, con el mapa o el arcade
-            if (event.target.closest('#holo-frame') || event.target.closest('.hud-interactive-container') || event.target.closest('.mobile-buttons-bar')) {
-                return;
-            }
-
-            if (!systemsArmed) {
-                const ctxAudio = getAudioContext();
-                if (ctxAudio.state === 'suspended') {
-                    ctxAudio.resume();
-                }
-                startSpaceMusic();
-                systemsArmed = true;
-                
+        const backBtn = document.getElementById('btn-back');
+        backBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (audioCtx) {
                 playClickSound();
-                
-                warningText.innerHTML = "todo preparado para el amartizaje";
-                warningText.style.color = "#ff5533";
-                warningText.style.textShadow = "0 0 12px rgba(255, 85, 51, 0.8)";
-                return; 
             }
-
-            if (!introFinished || isTransitioning) return;
-
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects([mars, stormLayer]);
-
-            if (intersects.length > 0) {
-                isTransitioning = true;
-
-                // Sonido de impulso Warp desbocado y dramático de aceleración ascendente
-                playWarpSound();
-
-                hintEl.style.opacity = '0';
-                hudPanel.style.opacity = '0';
-                
-                // CLAVE: Desvanecemos también la caja completa de interactivos del HUD para que no queden pegados
-                const hudInteractive = document.getElementById('hud-interactive');
-                if (hudInteractive) {
-                    hudInteractive.style.opacity = '0';
-                    hudInteractive.style.pointerEvents = 'none';
-                }
-
-                // Desvanecer música de cabina
-                if (masterGain) {
-                    masterGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.8);
-                }
-
-                document.getElementById('transition-overlay').style.opacity = '1';
-
-                setTimeout(() => {
-                    window.location.href = "galeria.html";
-                }, 1000); 
-            }
+            setTimeout(() => {
+                window.location.href = backBtn.getAttribute('href');
+            }, 250);
         });
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-
-            if (!isHoveringPlanet) {
-                targetHintX = window.innerWidth / 2;
-                targetHintY = window.innerHeight / 2;
+        const resumeAudio = () => {
+            const ctxAudio = getAudioContext();
+            if (ctxAudio && ctxAudio.state === 'suspended') {
+                ctxAudio.resume();
             }
-        });
-
-
-        // --- 👾 MINIJUEGO ARCADE DE MARCIANOS 8 BITS (HTML5 CANVAS) - MARS ARCADE ---
-        const btnOpenArcade = document.getElementById('btn-open-arcade');
-        const btnCloseArcade = document.getElementById('btn-close-arcade');
-        const holoFrame = document.getElementById('holo-frame');
-        const arcadeCanvas = document.getElementById('arcade-canvas');
-        const ctx = arcadeCanvas.getContext('2d');
-
-        // Configuración y variables de estado del minijuego
-        let gameLoopId = null;
-        let gameActive = false;
-        let score = 0;
-        let lives = 3;
-
-        // Entidades de la simulación
-        let player = {
-            x: 185,
-            y: 210,
-            width: 30,
-            height: 14,
-            speed: 4.5,
-            movingLeft: false,
-            movingRight: false
         };
 
-        let bullets = [];
-        let enemies = [];
-        let particles = [];
-        let arcadeStars = [];
+        window.addEventListener('click', resumeAudio);
+        window.addEventListener('touchstart', resumeAudio);
+        window.addEventListener('mousedown', resumeAudio);
+        window.addEventListener('keydown', resumeAudio);
 
-        // Generamos estrellas de fondo de 8 bits para el minijuego
-        for (let i = 0; i < 25; i++) {
-            arcadeStars.push({
-                x: Math.random() * arcadeCanvas.width,
-                y: Math.random() * arcadeCanvas.height,
-                size: 1 + Math.random() * 2,
-                speed: 0.5 + Math.random() * 1.2
-            });
-        }
+        // --- 6. GESTIÓN DEL BOTÓN CONMUTADOR DE TELEMETRÍA (DÍA/NOCHE) ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const sunIcon = themeToggle.querySelector('.sun-icon');
+        const moonIcon = themeToggle.querySelector('.moon-icon');
 
-        // Generar un sonido de disparo synth retro (Web Audio API)
-        function playLaserSynth() {
-            const ctxAudio = getAudioContext();
-            if (!ctxAudio) return;
-            const osc = ctxAudio.createOscillator();
-            const gainNode = ctxAudio.createGain();
-
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(440, ctxAudio.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(1200, ctxAudio.currentTime + 0.12);
-
-            gainNode.gain.setValueAtTime(0.04, ctxAudio.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.001, ctxAudio.currentTime + 0.12);
-
-            osc.connect(gainNode);
-            gainNode.connect(ctxAudio.destination);
-
-            osc.start();
-            osc.stop(ctxAudio.currentTime + 0.13);
-
-            osc.onended = () => {
-                osc.disconnect();
-                gainNode.disconnect();
-            };
-        }
-
-        // Generar un sonido de explosión synth retro (Web Audio API)
-        function playExplosionSynth() {
-            const ctxAudio = getAudioContext();
-            if (!ctxAudio) return;
-            const osc = ctxAudio.createOscillator();
-            const gainNode = ctxAudio.createGain();
-
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(180, ctxAudio.currentTime);
-            osc.frequency.linearRampToValueAtTime(30, ctxAudio.currentTime + 0.28);
-
-            gainNode.gain.setValueAtTime(0.15, ctxAudio.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.001, ctxAudio.currentTime + 0.3);
-
-            osc.connect(gainNode);
-            gainNode.connect(ctxAudio.destination);
-
-            osc.start();
-            osc.stop(ctxAudio.currentTime + 0.3);
-
-            osc.onended = () => {
-                osc.disconnect();
-                gainNode.disconnect();
-            };
-        }
-
-        // Lógica de spawn de enemigos
-        function spawnEnemy() {
-            if (!gameActive) return;
-            // CLAVE 1: Disminución de velocidad para que bajen más despacio
-            // Spawn de marcianos en el eje X aleatorio
-            enemies.push({
-                x: Math.random() * (arcadeCanvas.width - 24) + 4,
-                y: -15,
-                width: 24, // un pelín más anchos para la silueta del calamar
-                height: 16,
-                speed: 0.6 + Math.random() * 0.4, // Caída un 60% más lenta para jugabilidad perfecta
-                pulseOffset: Math.random() * Math.PI
-            });
-        }
-
-        // Lógica de partículas para explosiones
-        function createExplosion(x, y) {
-            for (let i = 0; i < 10; i++) {
-                particles.push({
-                    x: x + 12,
-                    y: y + 8,
-                    vx: (Math.random() - 0.5) * 4,
-                    vy: (Math.random() - 0.5) * 4,
-                    size: 1.5 + Math.random() * 3,
-                    life: 1.0,
-                    decay: 0.03 + Math.random() * 0.03
-                });
-            }
-        }
-
-        // Disparo de láser de la nave
-        function shootLaser() {
-            if (!gameActive) return;
-            bullets.push({
-                x: player.x + player.width / 2 - 1.5,
-                y: player.y,
-                width: 3,
-                height: 8,
-                speed: 6.5
-            });
-            playLaserSynth();
-        }
-
-        // Reset completo del minijuego
-        function resetGame() {
-            score = 0;
-            lives = 3;
-            player.x = 185;
-            bullets = [];
-            enemies = [];
-            particles = [];
-            gameActive = true;
-        }
-
-        // Bucle de físicas y renderizado del minijuego
-        function updateGame() {
-            // Limpieza del canvas con look digital oscuro
-            ctx.fillStyle = '#050204';
-            ctx.fillRect(0, 0, arcadeCanvas.width, arcadeCanvas.height);
-
-            // Renderizar y desplazar estrellas de fondo de 8 bits
-            ctx.fillStyle = '#rgba(255, 255, 255, 0.4)';
-            for (let i = 0; i < arcadeStars.length; i++) {
-                let s = arcadeStars[i];
-                s.y += s.speed;
-                if (s.y > arcadeCanvas.height) {
-                    s.y = 0;
-                    s.x = Math.random() * arcadeCanvas.width;
-                }
-                ctx.fillStyle = `rgba(255, 255, 255, ${0.15 + s.speed * 0.25})`;
-                ctx.fillRect(s.x, s.y, s.size, s.size);
-            }
-
-            // Rejilla técnica de fondo en el juego
-            ctx.strokeStyle = 'rgba(255, 85, 51, 0.03)';
-            ctx.lineWidth = 1;
-            for (let x = 0; x < arcadeCanvas.width; x += 20) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, arcadeCanvas.height);
-                ctx.stroke();
-            }
-            for (let y = 0; y < arcadeCanvas.height; y += 20) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(arcadeCanvas.width, y);
-                ctx.stroke();
-            }
-
-            if (gameActive) {
-                // Mover jugador
-                if (player.movingLeft && player.x > 0) {
-                    player.x -= player.speed;
-                }
-                if (player.movingRight && player.x < arcadeCanvas.width - player.width) {
-                    player.x += player.speed;
-                }
-
-                // Renderizar jugador (Nave estilo 8-bits vectorial)
-                ctx.strokeStyle = '#ff5533';
-                ctx.fillStyle = 'rgba(255, 85, 51, 0.15)';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(player.x, player.y + player.height);
-                ctx.lineTo(player.x + player.width / 2, player.y);
-                ctx.lineTo(player.x + player.width, player.y + player.height);
-                ctx.closePath();
-                ctx.stroke();
-                ctx.fill();
-
-                // Actualizar y renderizar proyectiles
-                ctx.fillStyle = '#00ff66';
-                for (let i = bullets.length - 1; i >= 0; i--) {
-                    let b = bullets[i];
-                    b.y -= b.speed;
-                    ctx.fillRect(b.x, b.y, b.width, b.height);
-
-                    // Borrar fuera de límite superior
-                    if (b.y < 0) {
-                        bullets.splice(i, 1);
-                    }
-                }
-
-                // Actualizar y renderizar marcianos
-                for (let i = enemies.length - 1; i >= 0; i--) {
-                    let e = enemies[i];
-                    e.y += e.speed;
-
-                    // Movimiento sinusoidal estético de 8 bits
-                    const waveOffset = Math.sin(Date.now() * 0.005 + e.pulseOffset) * 0.55;
-                    e.x += waveOffset;
-
-                    // CLAVE 2: Dibujar marciano con silueta de "Calamar Espacial" 8-bits retro glowing muy original
-                    ctx.strokeStyle = '#00ffff';
-                    ctx.fillStyle = 'rgba(0, 255, 255, 0.15)';
-                    ctx.lineWidth = 1.5;
-                    ctx.beginPath();
-                    
-                    // Domo/cabeza del calamar
-                    ctx.moveTo(e.x + e.width / 2, e.y); // Superior central
-                    ctx.bezierCurveTo(e.x + e.width, e.y, e.x + e.width, e.y + e.height * 0.6, e.x + e.width, e.y + e.height * 0.6);
-                    
-                    // Tentáculos / patas oscilantes inferiores de estilo pixel art
-                    ctx.lineTo(e.x + e.width * 0.8, e.y + e.height);
-                    ctx.lineTo(e.x + e.width * 0.6, e.y + e.height * 0.7);
-                    ctx.lineTo(e.x + e.width * 0.5, e.y + e.height);
-                    ctx.lineTo(e.x + e.width * 0.4, e.y + e.height * 0.7);
-                    ctx.lineTo(e.x + e.width * 0.2, e.y + e.height);
-                    
-                    ctx.lineTo(e.x, e.y + e.height * 0.6);
-                    ctx.bezierCurveTo(e.x, e.y + e.height * 0.6, e.x, e.y, e.x + e.width / 2, e.y);
-                    ctx.closePath();
-                    ctx.stroke();
-                    ctx.fill();
-
-                    // Ojos LED rojos brillantes del calamar espacial
-                    ctx.fillStyle = '#ff1155';
-                    ctx.fillRect(e.x + e.width * 0.3, e.y + e.height * 0.3, 2, 2);
-                    ctx.fillRect(e.x + e.width * 0.6, e.y + e.height * 0.3, 2, 2);
-
-                    // Comprobar colisión con proyectiles
-                    for (let j = bullets.length - 1; j >= 0; j--) {
-                        let b = bullets[j];
-                        if (b.x < e.x + e.width &&
-                            b.x + b.width > e.x &&
-                            b.y < e.y + e.height &&
-                            b.y + b.height > e.y) {
-                            
-                            // Colisión detectada
-                            createExplosion(e.x, e.y);
-                            playExplosionSynth();
-                            enemies.splice(i, 1);
-                            bullets.splice(j, 1);
-                            score += 10;
-                            break;
-                        }
-                    }
-
-                    // Comprobar si cruzan la línea o chocan contra el jugador
-                    if (e.y > arcadeCanvas.height) {
-                        enemies.splice(i, 1);
-                        lives--;
-                        if (lives <= 0) {
-                            gameActive = false;
-                        }
-                    }
-                }
-
-                // Renderizar y actualizar partículas de explosiones
-                for (let i = particles.length - 1; i >= 0; i--) {
-                    let p = particles[i];
-                    p.x += p.vx;
-                    p.y += p.vy;
-                    p.life -= p.decay;
-
-                    ctx.fillStyle = `rgba(255, 119, 68, ${p.life})`;
-                    ctx.fillRect(p.x, p.y, p.size, p.size);
-
-                    if (p.life <= 0) {
-                        particles.splice(i, 1);
-                    }
-                }
-
-                // Renderizar marcador HUD del arcade
-                ctx.fillStyle = '#ffffff';
-                ctx.font = "bold 9px 'Montserrat', sans-serif";
-                ctx.fillText(`PUNTOS: ${score}`, 12, 20);
-                ctx.fillText(`VIDAS: ${'❤️'.repeat(lives)}`, arcadeCanvas.width - 95, 20);
-
-            } else {
-                // Pantalla de Game Over / Espera - Identidad Mars Arcade
-                ctx.fillStyle = '#ff5533';
-                ctx.font = "bold 16px 'Montserrat', sans-serif";
-                ctx.textAlign = 'center';
-                ctx.fillText("MARS ARCADE", arcadeCanvas.width / 2, arcadeCanvas.height / 2 - 20);
-                
-                ctx.fillStyle = '#ffffff';
-                ctx.font = "9px 'Montserrat', sans-serif";
-                ctx.fillText(`PUNTUACIÓN MÁXIMA OBTENIDA: ${score}`, arcadeCanvas.width / 2, arcadeCanvas.height / 2 + 10);
-                
-                ctx.fillStyle = '#00ff66';
-                ctx.font = "bold 10px 'Montserrat', sans-serif";
-                ctx.fillText("HAZ CLICK PARA INICIAR PROTOCOLO", arcadeCanvas.width / 2, arcadeCanvas.height / 2 + 40);
-                ctx.textAlign = 'left'; // Reset alignment
-            }
-        }
-
-        // Bucle autónomo del minijuego
-        function startGameLoop() {
-            updateGame();
-            gameLoopId = requestAnimationFrame(startGameLoop);
-        }
-
-        // Spawn de marcianos regular
-        let spawnInterval = setInterval(spawnEnemy, 1600);
-
-        // --- GESTIÓN DE EVENTOS DE INTERFAZ DEL ARCADE ---
-        btnOpenArcade.addEventListener('click', (e) => {
-            playClickSound();
-            holoFrame.classList.add('active');
-            resetGame();
-            if (!gameLoopId) {
-                startGameLoop();
-            }
-            e.stopPropagation(); // Evitamos que el click se propague al canvas 3D
-        });
-
-        btnCloseArcade.addEventListener('click', (e) => {
-            playClickSound();
-            holoFrame.classList.remove('active');
-            gameActive = false;
-            cancelAnimationFrame(gameLoopId);
-            gameLoopId = null;
-            e.stopPropagation(); // Evitamos que el click se propague al canvas 3D
-        });
-
-        // Click en canvas para reiniciar juego si está inactivo
-        arcadeCanvas.addEventListener('click', (e) => {
-            if (!gameActive) {
-                playClickSound();
-                resetGame();
-            }
-            e.stopPropagation();
-        });
-
-        // Capturar controles del teclado para evitar Scroll de página y mover la nave
-        window.addEventListener('keydown', (e) => {
-            if (!holoFrame.classList.contains('active')) return;
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('day-mode');
+            const isDay = document.body.classList.contains('day-mode');
             
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
-                player.movingLeft = true;
-                e.preventDefault();
+            if (isDay) {
+                sunIcon.style.display = 'none';
+                moonIcon.style.display = 'block';
+            } else {
+                sunIcon.style.display = 'block';
+                moonIcon.style.display = 'none';
             }
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
-                player.movingRight = true;
-                e.preventDefault();
+            
+            if (audioCtx) {
+                playClickSound();
             }
-            if (e.key === ' ' || e.key === 'Spacebar') {
-                shootLaser();
-                e.preventDefault();
-            }
-        });
-
-        window.addEventListener('keyup', (e) => {
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
-                player.movingLeft = false;
-            }
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
-                player.movingRight = false;
-            }
-        });
-
-        // --- BOTONES PARA DISPOSITIVOS MÓVILES ---
-        const btnLeft = document.getElementById('m-btn-left');
-        const btnRight = document.getElementById('m-btn-right');
-        const btnFire = document.getElementById('m-btn-fire');
-
-        btnLeft.addEventListener('mousedown', (e) => { player.movingLeft = true; e.stopPropagation(); });
-        btnLeft.addEventListener('mouseup', (e) => { player.movingLeft = false; e.stopPropagation(); });
-        btnLeft.addEventListener('touchstart', (e) => { player.movingLeft = true; e.preventDefault(); e.stopPropagation(); });
-        btnLeft.addEventListener('touchend', (e) => { player.movingLeft = false; e.stopPropagation(); });
-
-        btnRight.addEventListener('mousedown', (e) => { player.movingRight = true; e.stopPropagation(); });
-        btnRight.addEventListener('mouseup', (e) => { player.movingRight = false; e.stopPropagation(); });
-        btnRight.addEventListener('touchstart', (e) => { player.movingRight = true; e.preventDefault(); e.stopPropagation(); });
-        btnRight.addEventListener('touchend', (e) => { player.movingRight = false; e.stopPropagation(); });
-
-        btnFire.addEventListener('click', (e) => {
-            shootLaser();
-            e.preventDefault();
-            e.stopPropagation();
         });
     </script>
 </body>
