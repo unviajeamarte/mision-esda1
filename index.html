@@ -196,7 +196,7 @@
             }
         }
 
-        /* --- BOTÓN HUD DE INICIAR ARCADE --- */
+        /* --- CONTENEDOR HUD DE INTERACTIVOS --- */
         .hud-interactive-container {
             position: absolute;
             z-index: 20;
@@ -233,6 +233,58 @@
             color: #010103;
             box-shadow: 0 0 15px rgba(255, 85, 51, 0.4);
             transform: translateX(4px);
+        }
+
+        /* --- CAJA DEL MAPA HOLOGRÁFICO DE SUPERFICIE --- */
+        .hud-map-box {
+            width: 210px;
+            background: rgba(16, 8, 10, 0.6);
+            border: 1px solid rgba(255, 85, 51, 0.25);
+            border-radius: 4px;
+            padding: 12px;
+            font-family: 'Montserrat', sans-serif;
+            color: #ff5533;
+            box-shadow: 0 0 15px rgba(255, 85, 51, 0.05);
+            pointer-events: auto;
+        }
+
+        .hud-map-title {
+            font-size: 8px;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .hud-map-status {
+            color: #ff3a0c;
+            animation: blink 1s infinite alternate;
+        }
+
+        .hud-map-screen {
+            width: 186px;
+            height: 100px;
+            background-color: #060203;
+            border: 1px solid rgba(255, 85, 51, 0.15);
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #hud-mars-map {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .hud-map-telemetry {
+            font-size: 8px;
+            color: rgba(255, 85, 51, 0.6);
+            margin-top: 8px;
+            line-height: 1.4;
+            font-family: 'Montserrat', sans-serif;
         }
 
         /* --- CONSOLA DEL ARCADE DE MARCIANOS DE 8 BITS --- */
@@ -413,6 +465,21 @@
             </svg>
             MARS_ARCADE_01
         </button>
+
+        <!-- NUEVO ELEMENTO: MAPA HOLOGRÁFICO DE SUPERFICIE MARCIANA -->
+        <div class="hud-map-box">
+            <div class="hud-map-title">
+                <span>SURFACE_MAPPING</span>
+                <span id="hud-map-status-label" class="hud-map-status">SCANNING</span>
+            </div>
+            <div class="hud-map-screen">
+                <canvas id="hud-mars-map" width="186" height="100"></canvas>
+            </div>
+            <div class="hud-map-telemetry" id="hud-map-coords-text">
+                TRACKING: OFF_RANGE<br>
+                COORDS: --° --' N / --° --' E
+            </div>
+        </div>
     </div>
 
     <!-- ARCADE DE COMBATE DE 8 BITS (CANVAS JUEGO DE MARCIANOS) -->
@@ -1166,6 +1233,120 @@
         }, 800);
 
 
+        // --- 🗺️ NUEVA LÓGICA DE DIBUJO DEL MAPA HUD EN 2D ---
+        const marsMapCanvas = document.getElementById('hud-mars-map');
+        const mapCtx = marsMapCanvas.getContext('2d');
+        const mapCoordsText = document.getElementById('hud-map-coords-text');
+        const mapStatusLabel = document.getElementById('hud-map-status-label');
+
+        // Valores de seguimiento del puntero sobre la textura (U, V)
+        let mapTargetU = 0.5;
+        let mapTargetV = 0.5;
+        let isTrackingPlanet = false;
+
+        // Suave interpolación para que el puntero se desplace elegantemente en el 2D
+        let mapCurrentU = 0.5;
+        let mapCurrentV = 0.5;
+
+        function renderMarsHoloMap() {
+            // Limpieza con sutil tono rojizo técnico
+            mapCtx.fillStyle = '#080103';
+            mapCtx.fillRect(0, 0, marsMapCanvas.width, marsMapCanvas.height);
+
+            // Dibujar rejilla del radar técnico
+            mapCtx.strokeStyle = 'rgba(255, 85, 51, 0.05)';
+            mapCtx.lineWidth = 0.5;
+            for (let x = 0; x < marsMapCanvas.width; x += 15) {
+                mapCtx.beginPath();
+                mapCtx.moveTo(x, 0);
+                mapCtx.lineTo(x, marsMapCanvas.height);
+                mapCtx.stroke();
+            }
+            for (let y = 0; y < marsMapCanvas.height; y += 15) {
+                mapCtx.beginPath();
+                mapCtx.moveTo(0, y);
+                mapCtx.lineTo(marsMapCanvas.width, y);
+                mapCtx.stroke();
+            }
+
+            // Dibujar siluetas esquemáticas simplificadas de la topografía marciana (Holograma de puntos)
+            mapCtx.strokeStyle = 'rgba(255, 85, 51, 0.15)';
+            mapCtx.lineWidth = 1;
+            
+            // Olympus Mons (Concéntrico)
+            mapCtx.beginPath();
+            mapCtx.arc(40, 45, 12, 0, Math.PI * 2);
+            mapCtx.stroke();
+            mapCtx.beginPath();
+            mapCtx.arc(40, 45, 6, 0, Math.PI * 2);
+            mapCtx.stroke();
+
+            // Valles Marineris (Fisura geológica lineal)
+            mapCtx.beginPath();
+            mapCtx.moveTo(70, 52);
+            mapCtx.lineTo(110, 55);
+            mapCtx.lineTo(135, 50);
+            mapCtx.stroke();
+
+            // Hellas Planitia (Gran cuenca circular del sur)
+            mapCtx.beginPath();
+            mapCtx.arc(145, 75, 18, 0, Math.PI * 2);
+            mapCtx.stroke();
+
+            // Suave interpolación hacia el objetivo actual de escaneo
+            mapCurrentU = THREE.MathUtils.lerp(mapCurrentU, mapTargetU, 0.1);
+            mapCurrentV = THREE.MathUtils.lerp(mapCurrentV, mapTargetV, 0.1);
+
+            const mapX = mapCurrentU * marsMapCanvas.width;
+            const mapY = (1 - mapCurrentV) * marsMapCanvas.height; // El eje Y de Three.js UV es opuesto al Canvas 2D
+
+            // Dibujar el punto de rastreo láser parpadeante
+            mapCtx.fillStyle = isTrackingPlanet ? '#ff3a0c' : 'rgba(255, 85, 51, 0.4)';
+            mapCtx.beginPath();
+            mapCtx.arc(mapX, mapY, 3, 0, Math.PI * 2);
+            mapCtx.fill();
+
+            // Círculo de mira exterior del radar (blinking)
+            mapCtx.strokeStyle = isTrackingPlanet ? '#ff5533' : 'rgba(255, 85, 51, 0.2)';
+            mapCtx.lineWidth = 1;
+            mapCtx.beginPath();
+            const pulseRadius = 5 + Math.sin(Date.now() * 0.008) * 3;
+            mapCtx.arc(mapX, mapY, pulseRadius, 0, Math.PI * 2);
+            mapCtx.stroke();
+
+            // Cruz militar de apuntado HUD
+            mapCtx.strokeStyle = isTrackingPlanet ? '#ff5533' : 'rgba(255, 85, 51, 0.15)';
+            mapCtx.beginPath();
+            mapCtx.moveTo(mapX - 8, mapY); mapCtx.lineTo(mapX + 8, mapY);
+            mapCtx.moveTo(mapX, mapY - 8); mapCtx.lineTo(mapX, mapY + 8);
+            mapCtx.stroke();
+
+            // Actualizar cuadro de telemetría geográfica real de Marte
+            if (isTrackingPlanet) {
+                // Cálculo de latitud y longitud real basados en las coordenadas UV de Marte
+                const latDeg = Math.floor((mapTargetV - 0.5) * 180);
+                const lonDeg = Math.floor((mapTargetU - 0.5) * 360);
+                
+                const latLabel = latDeg >= 0 ? `${latDeg}° N` : `${Math.abs(latDeg)}° S`;
+                const lonLabel = lonDeg >= 0 ? `${lonDeg}° E` : `${Math.abs(lonDeg)}° O`;
+
+                mapCoordsText.innerHTML = `
+                    TRACKING: LOCK_TARGET<br>
+                    COORDS: ${latLabel} / ${lonLabel}
+                `;
+                mapStatusLabel.innerText = "LOCK";
+                mapStatusLabel.style.color = "#ff3a0c";
+            } else {
+                mapCoordsText.innerHTML = `
+                    TRACKING: OFF_RANGE<br>
+                    COORDS: --° --' N / --° --' E
+                `;
+                mapStatusLabel.innerText = "SCANNING";
+                mapStatusLabel.style.color = "rgba(255, 85, 51, 0.6)";
+            }
+        }
+
+
         // --- BUCLE DE ANIMACIÓN (LOOP) ---
         function animate() {
             requestAnimationFrame(animate);
@@ -1266,6 +1447,14 @@
                         `;
                         scannerText.style.color = '#ff3a0c';
                         scannerText.style.textShadow = '0 0 5px rgba(255, 58, 12, 0.5)';
+
+                        // Extraer coordenadas UV de la colisión para el mapa holográfico 2D
+                        const intersect = intersects[0];
+                        if (intersect.uv) {
+                            mapTargetU = intersect.uv.x;
+                            mapTargetV = intersect.uv.y;
+                            isTrackingPlanet = true;
+                        }
                     } else {
                         hintX = THREE.MathUtils.lerp(hintX, window.innerWidth / 2, 0.15);
                         hintY = THREE.MathUtils.lerp(hintY, window.innerHeight / 2, 0.15);
@@ -1280,11 +1469,20 @@
                         `;
                         scannerText.style.color = 'rgba(255, 85, 51, 0.5)';
                         scannerText.style.textShadow = 'none';
+
+                        // Movimiento de deriva lento (scanning drift) si el cursor sale del planeta
+                        isTrackingPlanet = false;
+                        mapTargetU = 0.5 + Math.sin(Date.now() * 0.001) * 0.25;
+                        mapTargetV = 0.5 + Math.cos(Date.now() * 0.001) * 0.15;
                     }
 
                     hintEl.style.left = `${hintX}px`;
                     hintEl.style.top = `${hintY}px`;
                 }
+
+                // Renderizamos la telemetría del mapa 2D en cada frame
+                renderMarsHoloMap();
+
             } else {
                 // --- EFECTO ACELERACIÓN WARP SUAVE Y ALTAMENTE SUTIL ---
                 warpSpeed += 0.035; 
@@ -1342,7 +1540,7 @@
 
         // Evento click unificado de doble fase (Armar sistemas / Iniciar viaje)
         window.addEventListener('click', (event) => {
-            // Evitamos que el click en Marte se dispare si interactuamos con botones HUD o con el arcade
+            // Evitamos que el click en Marte se dispare si interactuamos con botones HUD, con el mapa o el arcade
             if (event.target.closest('#holo-frame') || event.target.closest('.hud-interactive-container') || event.target.closest('.mobile-buttons-bar')) {
                 return;
             }
@@ -1357,7 +1555,7 @@
                 
                 playClickSound();
                 
-                warningText.innerHTML = "todo preparado para el amartizaje";
+                warningText.innerHTML = "todo preparado para aterrizar";
                 warningText.style.color = "#ff5533";
                 warningText.style.textShadow = "0 0 12px rgba(255, 85, 51, 0.8)";
                 return; 
