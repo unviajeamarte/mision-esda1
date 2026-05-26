@@ -181,21 +181,6 @@
             transition: opacity 0.8s ease-in;
         }
 
-        /* Animación de radar base para la mira */
-        @keyframes radar {
-            0% {
-                transform: translate(-50%, -50%) scale(0.85);
-                opacity: 0;
-            }
-            50% {
-                opacity: 0.6;
-            }
-            100% {
-                transform: translate(-50%, -50%) scale(1.2);
-                opacity: 0;
-            }
-        }
-
         /* --- CONTENEDOR HUD DE INTERACTIVOS --- */
         .hud-interactive-container {
             position: absolute;
@@ -437,8 +422,8 @@
 
         <!-- Coordenadas vivas en tiempo real -->
         <div class="hud-telemetry-coordinates" id="coords-text">
-            LAT: 12° 24' 18" S<br>
-            LON: 34° 56' 02" E<br>
+            LAT: 12° 24' 18.45" S<br>
+            LON: 34° 56' 02.12" E<br>
             ALT: 421.85 km
         </div>
 
@@ -509,6 +494,16 @@
     </div>
 
     <script>
+        // --- DECLARACIÓN GLOBAL DE MATERIALES ---
+        // Se definen globalmente para evitar ReferenceError al llamarse desde funciones externas
+        const cometMaterial = new THREE.LineBasicMaterial({
+            color: 0xffaa77,
+            transparent: true,
+            opacity: 0,
+            blending: THREE.AdditiveBlending,
+            linewidth: 2
+        });
+
         // --- INICIALIZACIÓN DE LA ESCENA ---
         const scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x010103, 0.008);
@@ -660,14 +655,6 @@
         const cometGeometry = new THREE.BufferGeometry();
         const cometPoints = new Float32Array(15 * 3); 
         cometGeometry.setAttribute('position', new THREE.BufferAttribute(cometPoints, 3));
-
-        const cometMaterial = new THREE.LineBasicMaterial({
-            color: 0xffaa77,
-            transparent: true,
-            opacity: 0,
-            blending: THREE.AdditiveBlending,
-            linewidth: 2
-        });
 
         const cometLine = new THREE.Line(cometGeometry, cometMaterial);
         scene.add(cometLine);
@@ -1076,7 +1063,7 @@
             baseDrone.start();
             lfo.start();
 
-            // 4. Pitidos de consola de telemetría
+            // 4. Pitidos de consola de telemetría (SUTILES, CÁLIDOS Y MATIZADOS PARA EVITAR DAÑOS)
             function playConsoleTelemetry() {
                 if (isTransitioning) return; 
 
@@ -1087,16 +1074,18 @@
                 pingOsc.type = 'sine';
                 
                 if (isClick) {
-                    pingOsc.frequency.setValueAtTime(135, ctxAudio.currentTime);
-                    pingGain.gain.setValueAtTime(0.06, ctxAudio.currentTime);
+                    pingOsc.frequency.setValueAtTime(110, ctxAudio.currentTime); // Frecuencia baja cálida
+                    pingGain.gain.setValueAtTime(0.03, ctxAudio.currentTime);
                     pingGain.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + 0.08);
                 } else {
-                    const freqs = [1800, 2200, 2500, 2900, 3200];
+                    // CLAVE: Frecuencias matizadas reducidas significativamente (520-880Hz en lugar de los agudos molestos)
+                    const freqs = [520, 580, 660, 780, 880]; 
                     const randomFreq = freqs[Math.floor(Math.random() * freqs.length)];
                     pingOsc.frequency.setValueAtTime(randomFreq, ctxAudio.currentTime);
                     
-                    pingGain.gain.setValueAtTime(0.02, ctxAudio.currentTime);
-                    pingGain.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + 0.4);
+                    // Volumen amortiguado al mínimo absoluto para una acústica de fondo placentera
+                    pingGain.gain.setValueAtTime(0.004, ctxAudio.currentTime); 
+                    pingGain.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + 0.3);
                 }
 
                 pingOsc.connect(pingGain);
@@ -1119,8 +1108,8 @@
                 }
             }, 2200);
 
-            // 5. Destellos armónicos
-            const notes = [440, 493.88, 554.37, 659.25, 739.99, 880]; 
+            // 5. Destellos armónicos (CÁLIDOS Y FILTRADOS CON LOWPASS)
+            const notes = [220, 261.63, 329.63, 392, 440]; 
 
             function playSpaceSparkle() {
                 if (isTransitioning) return; 
@@ -1130,19 +1119,20 @@
                 const sparkleFilter = ctxAudio.createBiquadFilter();
 
                 sparkleOsc.type = 'sine';
-                const randomNote = notes[Math.floor(Math.random() * notes.length)] * 2;
+                const randomNote = notes[Math.floor(Math.random() * notes.length)];
                 sparkleOsc.frequency.setValueAtTime(randomNote, ctxAudio.currentTime);
 
-                sparkleFilter.type = 'bandpass';
-                sparkleFilter.frequency.setValueAtTime(1200, ctxAudio.currentTime);
+                // Filtro paso bajo para recortar cualquier frecuencia aguda y suavizar el armónico
+                sparkleFilter.type = 'lowpass';
+                sparkleFilter.frequency.setValueAtTime(400, ctxAudio.currentTime);
 
                 sparkleGain.gain.setValueAtTime(0.0, ctxAudio.currentTime);
-                sparkleGain.gain.linearRampToValueAtTime(0.03, ctxAudio.currentTime + 1.5); 
+                sparkleGain.gain.linearRampToValueAtTime(0.01, ctxAudio.currentTime + 1.5); // Amplitud muy sutil
                 sparkleGain.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + 6.0); 
 
                 sparkleOsc.connect(sparkleFilter);
                 sparkleFilter.connect(sparkleGain);
-                sparkleFilter.connect(masterGain);
+                sparkleGain.connect(masterGain);
 
                 sparkleOsc.start();
                 sparkleOsc.stop(ctxAudio.currentTime + 6.1);
@@ -1160,6 +1150,7 @@
         }
 
         // --- REPRODUCCIÓN FÍSICA DE BIP DE INTERFAZ E EFECTO WARP ---
+        // CLAVE: Matizado y suavizado a 320Hz con menor volumen para evitar molestias al hacer clic
         function playClickSound() {
             const ctxAudio = getAudioContext();
             if (!ctxAudio) return;
@@ -1168,10 +1159,10 @@
             const gainNode = ctxAudio.createGain();
 
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(580, ctxAudio.currentTime); 
+            osc.frequency.setValueAtTime(320, ctxAudio.currentTime); // Pitch mucho más cálido y grave
 
             gainNode.gain.setValueAtTime(0.0, ctxAudio.currentTime);
-            gainNode.gain.linearRampToValueAtTime(0.05, ctxAudio.currentTime + 0.01);
+            gainNode.gain.linearRampToValueAtTime(0.025, ctxAudio.currentTime + 0.01); // Amplitud rebajada
             gainNode.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + 0.25);
 
             osc.connect(gainNode);
@@ -1539,9 +1530,10 @@
 
         animate();
 
-        // --- EVENTOS E INTERACTIVIDAD ---
+        // --- EVENTOS E INTERACTIVIDAD (ACTUALIZADO CON SOPORTE POINTER UNIFICADO PARA MOBILE Y DESKTOP) ---
 
-        window.addEventListener('mousemove', (event) => {
+        // Escuchamos pointermove para actualizar de forma instantánea tanto en móviles, lápiz óptico como en ratón
+        window.addEventListener('pointermove', (event) => {
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
@@ -1550,6 +1542,12 @@
 
             targetHintX = event.clientX;
             targetHintY = event.clientY;
+        });
+
+        // Pointerdown sincroniza al instante el rayo de selección en el primer toque de pantallas táctiles
+        window.addEventListener('pointerdown', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         });
 
         // Evento click unificado de doble fase (Armar sistemas / Iniciar viaje)
@@ -1577,13 +1575,15 @@
 
             if (!introFinished || isTransitioning) return;
 
+            // Recalculamos de forma robusta la colisión en base al puntero actual de click/touch
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects([mars, stormLayer]);
 
-            if (intersects.length > 0) {
+            // CLAVE DE RESOLUCIÓN: Si colisiona directamente o si el bucle principal de renderizado ya ha confirmado hover (isHoveringPlanet)
+            if (intersects.length > 0 || isHoveringPlanet) {
                 isTransitioning = true;
 
                 // Sonido de impulso Warp desbocado y dramático de aceleración ascendente
@@ -1641,8 +1641,8 @@
         let player = {
             x: 185,
             y: 210,
-            width: 30,
-            height: 14,
+            width: 32, // un poco más ancha para detalles vectoriales
+            height: 18,
             speed: 4.5,
             movingLeft: false,
             movingRight: false
@@ -1689,7 +1689,7 @@
             };
         }
 
-        // Generar un sonido de explosión synth retro (Web Audio API)
+        // Generar un sonido de explosion synth retro (Web Audio API)
         function playExplosionSynth() {
             const ctxAudio = getAudioContext();
             if (!ctxAudio) return;
@@ -1813,17 +1813,48 @@
                     player.x += player.speed;
                 }
 
-                // Renderizar jugador (Nave estilo 8-bits vectorial)
+                // --- CLAVE: RENDERIZADO DE LA NUEVA NAVE ESPACIAL EN 8 BITS (CAZA DETALLADO) ---
+                // Fuego de los propulsores traseros (parpadeante procedimental)
+                if (player.movingLeft || player.movingRight || Math.random() > 0.3) {
+                    ctx.strokeStyle = '#ff3a0c';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(player.x + player.width * 0.35, player.y + player.height);
+                    ctx.lineTo(player.x + player.width * 0.5, player.y + player.height + 4 + Math.random() * 6);
+                    ctx.lineTo(player.x + player.width * 0.65, player.y + player.height);
+                    ctx.stroke();
+                }
+
+                // Chasis principal de la nave aliada
                 ctx.strokeStyle = '#ff5533';
-                ctx.fillStyle = 'rgba(255, 85, 51, 0.15)';
+                ctx.fillStyle = 'rgba(255, 85, 51, 0.2)';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
-                ctx.moveTo(player.x, player.y + player.height);
-                ctx.lineTo(player.x + player.width / 2, player.y);
-                ctx.lineTo(player.x + player.width, player.y + player.height);
+                
+                // Geometría estilizada de nave de combate espacial
+                ctx.moveTo(player.x + player.width / 2, player.y); // Punta/cabina delantera
+                ctx.lineTo(player.x + player.width * 0.7, player.y + player.height * 0.4); // Ala derecha superior
+                ctx.lineTo(player.x + player.width, player.y + player.height * 0.7); // Ala derecha punta
+                ctx.lineTo(player.x + player.width * 0.8, player.y + player.height * 0.7); // Alerón interior der
+                ctx.lineTo(player.x + player.width * 0.7, player.y + player.height); // Escape derecho
+                ctx.lineTo(player.x + player.width * 0.3, player.y + player.height); // Escape izquierdo
+                ctx.lineTo(player.x + player.width * 0.2, player.y + player.height * 0.7); // Alerón interior izq
+                ctx.lineTo(player.x, player.y + player.height * 0.7); // Ala izquierda punta
+                ctx.lineTo(player.x + player.width * 0.3, player.y + player.height * 0.4); // Ala izquierda superior
+                
                 ctx.closePath();
                 ctx.stroke();
                 ctx.fill();
+
+                // Cabina/Visor luminoso de color cian brillante (Cockpit)
+                ctx.fillStyle = '#00ffff';
+                ctx.fillRect(player.x + player.width * 0.4, player.y + player.height * 0.3, player.width * 0.2, player.height * 0.25);
+
+                // Cañones láser en los extremos de las alas
+                ctx.fillStyle = '#ff5533';
+                ctx.fillRect(player.x, player.y + player.height * 0.5, 2, 4);
+                ctx.fillRect(player.x + player.width - 2, player.y + player.height * 0.5, 2, 4);
+
 
                 // Actualizar y renderizar proyectiles
                 ctx.fillStyle = '#00ff66';
