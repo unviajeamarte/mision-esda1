@@ -44,8 +44,8 @@
         }
 
         /* Suavizar la transición cromática global */
-        body, .project-card, header, footer, .modal-content, .btn-return, .theme-toggle, h2, p, h1, span, .video-box {
-            transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+        body, .project-card, header, footer, .modal-content, .btn-return, .theme-toggle, h2, p, h1, span, .video-box, .return-label {
+            transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, opacity 0.3s ease;
         }
 
         body {
@@ -221,17 +221,28 @@
             opacity: 0.9;
         }
 
-        /* --- BOTÓN INMERSIVO DE RETORNO (CON FONDO TRANSPARENTE E INTUITIVO) --- */
+        /* --- CONTENEDOR DEL BOTÓN DE REGRESO --- */
+        .return-container {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 25px;
+            gap: 8px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* --- BOTÓN INMERSIVO DE RETORNO (FONDO TRANSPARENTE) --- */
         .btn-return {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            margin-top: 25px;
             width: 48px;
             height: 48px;
             border: 1px solid var(--color-border);
             border-radius: 50%;
-            background: transparent; /* Fondo completamente transparente solicitado */
+            background: transparent; /* Fondo completamente transparente */
             color: var(--color-mars);
             backdrop-filter: blur(6px); /* Sutil desenfoque de los gases de fondo */
             -webkit-backdrop-filter: blur(6px);
@@ -242,15 +253,16 @@
             background: transparent;
         }
 
-        .btn-return:hover {
+        /* Ajustes interactivos enfocados en el hover del contenedor */
+        .return-container:hover .btn-return {
             background: rgba(255, 85, 51, 0.08); /* Suave tinte marciano al pasar el cursor */
             border-color: var(--color-mars);
             color: #ffffff;
             box-shadow: 0 0 15px var(--color-mars-glow);
-            transform: translateY(-4px) scale(1.05);
+            transform: translateY(-2px) scale(1.05);
         }
 
-        body.day-mode .btn-return:hover {
+        body.day-mode .return-container:hover .btn-return {
             background: rgba(0, 82, 255, 0.08); /* Suave tinte azul en modo día */
             color: var(--color-mars);
         }
@@ -262,8 +274,26 @@
             transition: transform 0.3s ease;
         }
 
-        .btn-return:hover .spaceship-nav-icon {
+        .return-container:hover .spaceship-nav-icon {
             transform: translateY(-2px);
+        }
+
+        /* --- ETIQUETA PEQUEÑA HUD BAJO EL BOTÓN --- */
+        .return-label {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.65rem;
+            color: var(--color-text-secondary);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 700;
+            opacity: 0.8;
+            pointer-events: none; /* Evita bloquear interacciones */
+        }
+
+        .return-container:hover .return-label {
+            color: var(--color-mars);
+            opacity: 1;
+            text-shadow: 0 0 5px var(--color-mars-glow);
         }
 
         /* --- GRID PRINCIPAL EN DOS COLUMNAS --- */
@@ -334,7 +364,7 @@
             transition: all 0.3s ease;
         }
 
-        /* MODIFICACIÓN: Iluminación de toda la tarjeta en hover de modo sutil e integrado */
+        /* Iluminación de toda la tarjeta en hover de modo sutil e integrado */
         .project-card:hover {
             transform: translateY(-5px);
             background: var(--color-card-hover); /* Sutil tinte del fondo completo */
@@ -823,23 +853,27 @@
         
         <p class="hud-description">Desde la asignatura de Medios Informáticos II, e inspirados en el concepto del DiseñaFest’26, se propone a los alumnos imaginar una escena en Marte. Con total libertad creativa, en cuanto a su visión y estética, y después de todo el desarrollo del proyecto (ADD) en Blender, diseñaron un breve teaser promocional del Festival.</p>
         <p class="hud-description">A continuación una muestra.</p>
-        <!-- Retorno al Index 3D -->
-        <a href="index.html" class="btn-return" id="btn-back" title="Volver a la Nave / Landing">
-            <svg class="spaceship-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2s-5 4-5 10c0 1.5 1 2.5 2 3h6c1-0.5 2-1.5 2-3 0-6-5-10-5-10z" />
-                <path d="M9 15l-3 2v-4" />
-                <path d="M15 15l3 2v-4" />
-                <path d="M12 17v5" />
-                <path d="M10 18.5l2 3.5 2-3.5" />
-                <circle cx="12" cy="8" r="1.5" fill="currentColor"/>
-            </svg>
+        
+        <!-- Retorno al Index 3D (CORREGIDO CON ENVOLVENTE Y ETIQUETA) -->
+        <a href="index.html" class="return-container" id="btn-back" title="Volver a la Nave / Landing">
+            <div class="btn-return">
+                <svg class="spaceship-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2s-5 4-5 10c0 1.5 1 2.5 2 3h6c1-0.5 2-1.5 2-3 0-6-5-10-5-10z" />
+                    <path d="M9 15l-3 2v-4" />
+                    <path d="M15 15l3 2v-4" />
+                    <path d="M12 17v5" />
+                    <path d="M10 18.5l2 3.5 2-3.5" />
+                    <circle cx="12" cy="8" r="1.5" fill="currentColor"/>
+                </svg>
+            </div>
+            <span class="return-label">Volver a la nave</span>
         </a>
     </header>
 
     <!-- Contenedor de Proyectos en Dos Columnas -->
     <main>
         <div class="gallery-grid" id="gallery-container">
-            <!-- Los 24 elementos se renderizan procedimentalmente por JS -->
+            <!-- Los 22 elementos se renderizan procedimentalmente por JS -->
         </div>
     </main>
 
@@ -877,17 +911,17 @@
             { id: 9, student: "Elisa Burillo", title: "La vida  creativa mas allá de la tierra", desc: "¿Y si en 2090 existiera un planeta Marte formado por islas flotantes donde la naturaleza y la creatividad convivieran en equilibrio? Un mundo imaginario lleno de paisajes imposibles, pequeñas comunidades y rincones por descubrir, creado para representar cómo el diseño y el arte puede ayudarnos a imaginar nuevas formas de vivir, crear y explorar más allá de la Tierra. Esta pieza audiovisual se ha desarrollado como propuesta promocional para el Diseña Fest 2026.", class: "2º DG", group: "Grupo A", videoId: "1fZGgBCNnxfXbVKeNT5d72FhV60lkQ0-_" },
             { id: 10, student: "Erika Dolz", title: "Ecosistema Alienígena hallado en Marte en 2112", desc: "Inspirada en la arquitectura de Singapur, nace esta propuesta visual para el Diseña Fest '26. Una pequeña ciudad alienígena en el Planeta Rojo repleta de edificios futuristas, árboles extraños y texturas de colores aún por descubrir.", class: "2º DG", group: "Grupo C", videoId: "1bwMj26vUh3B_aiXcnuEXOcGVlKZOAlIh" },
             { id: 11, student: "Eva Ayuda", title: "Lo inerte despierta", desc: "Estación rodante equipada con instrumental analí­tico de precisión. Animación de brazos robóticos y sensores cinemáticos integrados.", class: "2º DG", group: "Grupo C", videoId: "1mt5njXB45PksMg3NdHE4eEIJri-VHEDb" },
-            { id: 12, student: "Jorge Vaquerizo", title: "El Olimpo Rojo de los Prismas", desc: "Asciende a la cumbre rojiza y deja que la luz de sus cristales te ilumine, mientras admiras el firmamento en sus espejos cambiantes. Elévate hasta alcanzar el cosmos, cada vez más cerca que antes.", class: "2º DG", group: "Grupo C", videoId: "1CQg-uoJOYFBoKogqDgX3pogE7eEhb7U1" },
+            { id: 12, student: "Jorge Vaquerizo", title: "El Olimpo Rojo de los Prismas", desc: "Asciende a la cumbre rojiza y deja que la luz de sus cristales te ilumine, mientras admiras el firmamento en sus espejos cambiantes. Elévate hasta alcanzar el cosmos, cada vez más cerca que antes.", class: "2º DG", group: "Grupo C", videoId: "1CQg-uoJOYFBoKogX3pogE7eEhb7U1" },
             { id: 13, student: "Izarbe Pescador", title: "Información no registrada", desc: "Señal recuperada por la terminal. Composición en 3D que reconstruye un fragmento de la superficie marciana.", class: "2º DG", group: "Grupo A", videoId: "1n7WceSD0Iu2ZX38QJLC4cRmEzEnl2zG0" },
             { id: 14, student: "Lara Bení­tez", title: "Información no registrada", desc: "Señal recuperada por la terminal. Composición en 3D que reconstruye un fragmento de la superficie marciana.", class: "2º DG", group: "Grupo A", videoId: "1x88lw-ezqyhrld6BthLAdS7NXqtzJgn2" },
             { id: 15, student: "Leyre Flores", title: "El diseño de un nuevo mundo", desc: "Marte como un nuevo mundo que ya ha empezado a ser habitado, querí­a representar un espacio algo tenebroso, con formas exóticas que transmitieran la sensación de estar en un territorio desconocido. Sin embargo, el recorrido, el pasadizo y el altar funcionan como señales de presencia humana, como si los diseñadores ya hubieran comenzado a construir y dar sentido a ese nuevo planeta. Por eso el texto DiseñaFest aparece elevado sobre un altar, en un lugar importante y de valor, simbolizando el papel del diseño en la creación de este nuevo mundo.", class: "2º DG", group: "Grupo A", videoId: "1k8AtfKwg-i04z4NTS_-79ZeR_MSTY_dD" },
             { id: 16, student: "Marina Buil", title: "Habitat 001. Voronoi", desc: "Un santuario científico y monumental en un Marte surrealista del año 2112, inspirado en el hallazgo real de cristales de azufre del rover Curiosity. La escena fusiona geología marciana con estructuras de hormigón brutalistas y formas paramétricas que custodian de forma mística este valioso tesoro mineral.", class: "2º DG", group: "Grupo B", videoId: "13qrl88U09J2UltZ-0k-BoW_vGhwoD_Oe" },
-            { id: 17, student: "Michelle Vela", title: "El recorrido del hielo en Marte", desc: "Este proyecto ha buscado crear un entorno que si bien está inspirado en el planeta rojo, plantea un escenario diferente al que solemos imaginarnos. Con el pretexto de que se han encontrado indicios de la existencia de agua helada bajo el suelo de Marte, el eje de la animación se centra en mostrar una version de esta hipótesis, claramente inspirada e influenciada por la ciencia ficción. Por ello, lo que observamos, aparte de especies de plantas aliení­genas y formaciones rocosas de formas extrañas, es un gran rí­o de hielo. Este no sigue las leyes fí­sicas o quí­micas de nuestro planeta, y acaba formando esferas que se elevan hacia el cielo y desembocan en un gran lago. ", class: "2º DG", group: "Grupo C", videoId: "1oi6maskOayEdoypr17dYPJaWJ242s_3R" },
+            { id: 17, student: "Michelle Vela", title: "El recorrido del hielo en Marte", desc: "Este proyecto ha buscado crear un entorno que si bien está inspirado en el planeta rojo, plantea un escenario diferente al que solemos imaginarnos. Con el pretexto de que se han encontrado indicios de la existencia de agua helada bajo el suelo de Marte, el eje de la animación se centra en mostrar una version de esta hipótesis, claramente inspirada e influenciada por la ciencia ficción. Por ello, lo que observamos, aparte de especies de plantas aliení­genas y formaciones rocosas de formas extrañas, es un gran rí­o de hielo. Este no sigue las leyes fí­sicas o quí-micas de nuestro planeta, y acaba formando esferas que se elevan hacia el cielo y desembocan en un gran lago. ", class: "2º DG", group: "Grupo C", videoId: "1oi6maskOayEdoypr17dYPJaWJ242s_3R" },
             { id: 18, student: "Miriam Serrano", title: "Información no registrada", desc: "Señal recuperada por la terminal. Composición en 3D que reconstruye un fragmento de la superficie marciana.", class: "2º DG", group: "Grupo C", videoId: "1QtT07EJfDrXcrwxXR2gf-XexLZ3AL5g-" },
             { id: 19, student: "Pablo Marí­n", title: "Ecos de Marte", desc: "La escena representa una visión futurista de Marte convertida en un espacio de abandono tecnológico y exploración olvidada.", class: "2º DG", group: "Grupo C", videoId: "1UV5ADlhk2GDDcn-Lm_4GrhNXRO5Q4oUt" },
             { id: 20, student: "Pilar Gormedino", title: "El Marte que nadie imaginó", desc: "Un proyecto con el que he querido desafiar la estética clásica de Marte. El objetivo era  transformarlo en un oasis flotante y dinámico, a través de las diferentes plataformas suspendidas en el aire. Es una escena compuesta con elementos naturales y personajes inhumanos interactuando entre sí, de manera amigable disfrutando del Diseña Fest ' 26.", class: "2º DG", group: "Grupo C", videoId: "1b3HwF4fDfIhCR7S01v_Q-BmMCfCftKqt" },
             { id: 21, student: "Sara Gentil", title: "El viaje de la idea", desc: "Se trata de un recorrido que hace una bola 'la idea' a través de arquitecturas surrealistas sobre un lago en Marte. La bola asciende por escaleras y cruza arcos de manera fluida, simbolizando el proceso creativo hasta que aterriza y se asienta como punto de Diseña Fest. Completando la identidad.", class: "2º DG", group: "Grupo C", videoId: "1Ib6MWlcpqi7Y4KBYUEd45D94UVtMAzDk" },
-            { id: 22, student: "Sara Tejeda", title: "La llegada al planeta Rojo", desc: "Este es el momento de la llegada a Marte, siendo una primera exploración de su entorno y extrañas características que fusionan elementos fríos con cálidos. Esta senda le conduce a la cima de una montaña rocosa, sobre la que se encuentra con el anuncio del “Diseña Fest 26”.", class: "2º DG", group: "Grupo A", videoId: "1avI7n9yMJVfL5kKQIXhJmq0i5sxP_AYS" },
+            { id: 22, student: "Sara Tejeda", title: "Información no registrada", desc: "Señal recuperada por la terminal. Composición en 3D que reconstruye un fragmento de la superficie marciana.", class: "2º DG", group: "Grupo A", videoId: "1avI7n9yMJVfL5kKQIXhJmq0i5sxP_AYS" },
         ];
 
         // --- 2. RENDERIZADO PROCEDIMENTAL DE LAS TARJETAS ---
