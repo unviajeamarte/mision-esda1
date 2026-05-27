@@ -1,4 +1,4 @@
-<!DOCTYPE html><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -150,21 +150,51 @@
             50% { opacity: 0; }
         }
 
-        /* Mira/Círculo interactivo de zona de aterrizaje */
-        .cursor-hint {
+        /* --- MIRA INTERACTIVA DE DESIGNACIÓN DE ATERRIZAJE (CORREGIDA Y MÁS PEQUEÑA) --- */
+        .cursor-hint-container {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
             z-index: 3;
             pointer-events: none;
+            width: 80px; /* Reducido de 120px a 80px */
+            height: 80px;
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(1);
+            transition: opacity 1.5s ease, transform 0.3s ease;
+        }
+
+        /* Modificación suave al fijar objetivo */
+        .cursor-hint-container.locked {
+            transform: translate(-50%, -50%) scale(1.15);
+        }
+
+        /* Círculo interno que realiza la fluctuación radar constante */
+        .cursor-hint-radar {
+            width: 100%;
+            height: 100%;
             border: 2px dashed rgba(255, 85, 51, 0.5);
             border-radius: 50%;
-            width: 120px;
-            height: 120px;
-            opacity: 0;
-            transition: opacity 1.5s ease, border-color 0.3s ease, border-style 0.3s ease, transform 0.3s ease;
             animation: radar 2.5s infinite linear;
+            transition: border-color 0.3s ease, border-style 0.3s ease;
+        }
+
+        .cursor-hint-container.locked .cursor-hint-radar {
+            border-color: #ff3a0c;
+            border-style: solid;
+        }
+
+        /* Animación de radar pulsante */
+        @keyframes radar {
+            0% {
+                transform: scale(0.85);
+                opacity: 0;
+            }
+            50% {
+                opacity: 0.6;
+            }
+            100% {
+                transform: scale(1.25);
+                opacity: 0;
+            }
         }
 
         /* Transición de carga atmosférica */
@@ -468,8 +498,10 @@
         </div>
     </div>
     
-    <!-- Mira interactiva de designación de aterrizaje -->
-    <div id="planet-hint" class="cursor-hint"></div>
+    <!-- Mira interactiva de designación de aterrizaje (Separada para fluctuar de forma constante) -->
+    <div id="planet-hint" class="cursor-hint-container">
+        <div class="cursor-hint-radar"></div>
+    </div>
 
     <!-- Capa de transición a rojo atmósfera al hacer clic -->
     <div id="transition-overlay" class="fade-out-overlay"></div>
@@ -944,7 +976,7 @@
         let warpSpeed = 0.01; 
 
         const targetZ = 5.2; 
-        const speedFactor = 0.007; 
+        const speedFactor = 0.007; // Mantenemos la velocidad de aproximación lenta inicial exactamente como estaba
 
         const mouse = new THREE.Vector2();
         const targetRotation = new THREE.Vector2();
@@ -1438,9 +1470,9 @@
                     if (isHoveringPlanet) {
                         hintX = THREE.MathUtils.lerp(hintX, targetHintX, 0.15);
                         hintY = THREE.MathUtils.lerp(hintY, targetHintY, 0.15);
-                        hintEl.style.borderColor = '#ff3a0c';
-                        hintEl.style.borderStyle = 'solid'; 
-                        hintEl.style.transform = 'translate(-50%, -50%) scale(1.1)';
+                        
+                        // CLAVE: Activamos la clase locked para que fluctúe rítmicamente sin sobreescribir transform
+                        hintEl.classList.add('locked');
 
                         // Feedback activo de escáner en el HUD
                         scannerText.innerHTML = `
@@ -1461,9 +1493,9 @@
                     } else {
                         hintX = THREE.MathUtils.lerp(hintX, window.innerWidth / 2, 0.15);
                         hintY = THREE.MathUtils.lerp(hintY, window.innerHeight / 2, 0.15);
-                        hintEl.style.borderColor = 'rgba(255, 85, 51, 0.5)';
-                        hintEl.style.borderStyle = 'dashed'; 
-                        hintEl.style.transform = 'translate(-50%, -50%) scale(1.0)';
+                        
+                        // Retiramos clase locked al salir del planeta
+                        hintEl.classList.remove('locked');
 
                         scannerText.innerHTML = `
                             SCANNER: STANDBY<br>
@@ -1487,15 +1519,13 @@
                 renderMarsHoloMap();
 
             } else {
-                // --- EFECTO DE TRANSICIÓN DE AMARTIZAJE / IMPULSO ACELERADO ---
+                // --- EFECTO ACELERACIÓN WARP SUAVE Y ALTAMENTE SUTIL (MANTENEMOS VELOCIDADES ORIGINALES) ---
                 warpSpeed += 0.035; 
 
-                // CLAVE 1: Disminuimos el campo de visión (FOV) para crear un zoom de velocidad telescópico brutal hacia adelante
-                camera.fov = THREE.MathUtils.lerp(camera.fov, 40, 0.05); 
+                camera.fov = THREE.MathUtils.lerp(camera.fov, 115, 0.04); 
                 camera.updateProjectionMatrix();
 
-                // CLAVE 2: Lanzamos la cámara a gran velocidad directamente a traspasar el planeta (Z = -1.5) hundiéndonos en su núcleo
-                camera.position.z = Math.max(-1.5, camera.position.z - warpSpeed * 10.0);
+                camera.position.z = Math.max(2.22, camera.position.z - warpSpeed);
                 camera.position.x = THREE.MathUtils.lerp(camera.position.x, 0, 0.1);
                 camera.position.y = THREE.MathUtils.lerp(camera.position.y, 0, 0.1);
 
@@ -1581,9 +1611,7 @@
 
             if (!introFinished || isTransitioning) return;
 
-            // CLAVE EXTRAÍDA: Para evitar que coordenadas "click" simuladas y con lag de navegadores móviles
-            // sobreescriban a (0, 0) o causen desvíos imprecisos, prescindimos de resetear mouse.x/y con event.clientX/Y.
-            // Utilizamos el vector 'mouse' global, el cual es guardado con precisión milimétrica mediante pointermove y pointerdown.
+            // Para evitar problemas de lag y clics simulados en navegadores móviles, usamos las coordenadas de telemetría de precisión guardadas en "mouse"
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects([mars, stormLayer]);
 
