@@ -17,7 +17,7 @@
             --color-text-primary: #ffffff;
             --color-text-secondary: #a3b8cc;
             --color-glass: rgba(16, 8, 10, 0.75);
-            F--color-border: rgba(255, 85, 51, 0.22);
+            --color-border: rgba(255, 85, 51, 0.22);
             --color-grid: rgba(255, 85, 51, 0.08);
         }
 
@@ -220,7 +220,7 @@
             opacity: 0.9;
         }
 
-        /* Botón inmersivo de retorno */
+        /* --- BOTÓN INMERSIVO DE RETORNO (CORREGIDO CON FONDO TRANSPARENTE E INTUITIVO) --- */
         .btn-return {
             display: inline-flex;
             align-items: center;
@@ -230,24 +230,28 @@
             height: 48px;
             border: 1px solid var(--color-border);
             border-radius: 50%;
-            background: rgba(255, 85, 51, 0.02);
+            background: transparent; /* Fondo completamente transparente solicitado */
             color: var(--color-mars);
+            backdrop-filter: blur(6px); /* Sutil desenfoque de los gases de fondo */
+            -webkit-backdrop-filter: blur(6px);
             transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
         }
 
         body.day-mode .btn-return {
-            background: rgba(0, 82, 255, 0.02);
+            background: transparent;
         }
 
         .btn-return:hover {
-            background: var(--color-mars);
+            background: rgba(255, 85, 51, 0.08); /* Suave tinte marciano al pasar el cursor */
+            border-color: var(--color-mars);
             color: #ffffff;
             box-shadow: 0 0 15px var(--color-mars-glow);
             transform: translateY(-4px) scale(1.05);
         }
 
         body.day-mode .btn-return:hover {
-            color: #f8fafc;
+            background: rgba(0, 82, 255, 0.08); /* Suave tinte azul en modo día */
+            color: var(--color-mars);
         }
 
         /* Icono de la nave espacial despegando */
@@ -780,7 +784,7 @@
     <!-- Canvas de soporte para el fondo de gas dinámico -->
     <canvas id="gas-background"></canvas>
 
-    <!-- Cabecera HUD -->
+    <!-- Cabina de Telemetría HUD -->
     <header>
         <!-- Logotipo ESDA en la parte superior izquierda -->
         <div class="logo-container">
@@ -832,7 +836,7 @@
     <!-- Contenedor de Proyectos en Dos Columnas -->
     <main>
         <div class="gallery-grid" id="gallery-container">
-            <!-- Los 30 elementos se renderizan procedimentalmente por JS -->
+            <!-- Los 24 elementos se renderizan procedimentalmente por JS -->
         </div>
     </main>
 
