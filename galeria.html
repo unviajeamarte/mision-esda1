@@ -281,7 +281,7 @@
         /* --- ETIQUETA PEQUEÑA HUD BAJO EL BOTÓN --- */
         .return-label {
             font-family: 'Montserrat', sans-serif;
-            font-size: 0.4rem;
+            font-size: 0.65rem;
             color: var(--color-text-secondary);
             letter-spacing: 2px;
             text-transform: uppercase;
@@ -898,14 +898,14 @@
 
     <!-- SCRIPT DE EFECTOS VISUALES Y SONOROS (WEB AUDIO API) -->
     <script>
-        // --- 1. BANCO DE DATOS DE LOS 24 PROYECTOS ---
+        // --- 1. BANCO DE DATOS DE LOS 22 PROYECTOS (CON EXCLUSIÓN DE ENLACES FALLIDOS/PLACEHOLDERS) ---
         const proyectos = [
             { id: 1, student: "Alejandro Bellosta", title: "Ignea 2112", desc: "Una civilización futurista que ha logrado establecer su herencia y su hábitat en el planeta rojo. Ante la ausencia explícita de figuras humanas, la existencia de esta sociedad se manifiesta a través de su imponente y surrealista arquitectura biomórfica. La escena está dominada por un asentamiento de morfología orgánica, cuyas cúpulas translúcidas y nodos semiesféricos parecen brotar y echar raíces sobre el árido relieve marciano. Los intensos destellos carmesí que emanan desde el interior de las estructuras actúan como el propio pulso vital de ÍGNEA, rompiendo la monotonía del paisaje e indicando una actividad tecnológica y habitacional constante.", class: "2º DG", group: "Grupo B", videoId: "1J1RuIbU_aq-y4hDa5RUgA2tcRmRSu-PQ" },
             { id: 2, student: "Ana Marí­a Cojocaru", title: "Ethereal Bloom", desc: "Es un mundo abstracto y fantástico construido a partir de flores, perlas y cristales holográficos y en tonos suaves. La pieza explora una atmósfera etérea y surrealista donde la delicadeza de las formas y los materiales crea un mundo onírico y contemplativo.", class: "2º DG", group: "Grupo A", videoId: "1k7U89dEsXgN8c9S9YML7ZqiOSSSFfAIw" },
             { id: 3, student: "Andrea Sevillano", title: "El otro lado del tiempo", desc: "En el año 2112, tras la destrucción de la Tierra por el cambio climático, una tripulación viaja hacia Marte para colonizarlo. Sin embargo, un fallo en el trayecto los hace viajar en el tiempo, provocando un aterrizaje forzoso en el Marte de hace 2112 millones de años. Al descubrir un planeta lleno de agua y vegetación similar a la Tierra primigenia, los tripulantes se preguntan si el pasado de Marte es el futuro que le depara a la Tierra.", class: "2º DG", group: "Grupo A", videoId: "1sLWOL0V981D1dCuzzAl9wb7zdLuHgDzx" },
-            { id: 4, student: "Aitana Garcí­a", title: "Información no registrada", desc: "Señal recuperada por la terminal. Composición en 3D que reconstruye un fragmento de la superficie marciana.", class: "2º DG", group: "Grupo B", videoId: "1_o3rRorMyD7v9B7T3U66y78" },
-            { id: 5, student: "Aldara Esteban", title: "Información no registrada", desc: "Señal recuperada por la terminal. Composición en 3D que reconstruye un fragmento de la superficie marciana.", class: "2º DG", group: "Grupo B", videoId: "1L7VlxhnBkxAPM5oKsJGoUUHjzf-uNb_P" },
-            { id: 6, student: "Amina Talby", title: "Información no registrada", desc: "Señal recuperada por la terminal. Composición en 3D que reconstruye un fragmento de la superficie marciana.", class: "2º DG", group: "Grupo B", videoId: "16FIpYnvmHBSvhe1e5_KN3TMNuX5pxkDO" },
+            { id: 4, student: "Aitana Garcí­a", title: "Información no registrada", desc: "Señal recuperada por la terminal. Composición en 3D que reconstruye un fragmento de la superficie marciana a partir de los datos gráficos de la asignatura.", class: "2º DG", group: "Grupo B", videoId: "1k8AtfKwg-i04z4NTS_-79ZeR_MSTY_dD" },
+            { id: 5, student: "Aldara Esteban", title: "Información no registrada", desc: "Señal recuperada por la terminal. Composición en 3D que reconstruye un fragmento de la superficie marciana a partir de los datos gráficos de la asignatura.", class: "2º DG", group: "Grupo B", videoId: "1L7VlxhnBkxAPM5oKsJGoUUHjzf-uNb_P" },
+            { id: 6, student: "Amina Talby", title: "Información no registrada", desc: "Señal recuperada por la terminal. Composición en 3D que reconstruye un fragmento de la superficie marciana a partir de los datos de modelado.", class: "2º DG", group: "Grupo B", videoId: "16FIpYnvmHBSvhe1e5_KN3TMNuX5pxkDO" },
             { id: 7, student: "Aurora Lahuerta", title: "Rumbo al DF, diseñadores explorando", desc: "La idea central se articula en torno a una revelación escénica: una cascada de lava que actúa como uno de los elementos principales. A medida que la cámara avanza, se empieza a desvelar un entorno oní­rico habitado por elements inusuales, culminando con la aparición de las iniciales del Diseña Fest (DF).", class: "2º DG", group: "Grupo A", videoId: "1DyZ_p1zKqCT8pAL2CWJJJALJpsAS48lC" },
             { id: 8, student: "Carla Loza", title: "El despertar de Marte", desc: "una visión diferente de Marte, imaginándolo como un planeta que está cambiando y despertando poco a poco. En lugar de que la vida llegue desde fuera, surge desde el interior del propio planeta mediante elementos bioluminiscentes y formas que mezclan lo orgánico y lo mineral, creando un entorno basado en la energía, la luz y la transformación. ", class: "2º DG", group: "Grupo A", videoId: "1GTAMuuUvukOPwTJfuSt6Hig6Y_2S4V6m" },
             { id: 9, student: "Elisa Burillo", title: "La vida  creativa mas allá de la tierra", desc: "¿Y si en 2090 existiera un planeta Marte formado por islas flotantes donde la naturaleza y la creatividad convivieran en equilibrio? Un mundo imaginario lleno de paisajes imposibles, pequeñas comunidades y rincones por descubrir, creado para representar cómo el diseño y el arte puede ayudarnos a imaginar nuevas formas de vivir, crear y explorar más allá de la Tierra. Esta pieza audiovisual se ha desarrollado como propuesta promocional para el Diseña Fest 2026.", class: "2º DG", group: "Grupo A", videoId: "1fZGgBCNnxfXbVKeNT5d72FhV60lkQ0-_" },
@@ -1151,7 +1151,7 @@
             modalTitle.innerText = title;
             modalStudent.innerText = student;
             
-            // Calidad Full HD
+            // Calidad Full HD Forzada mediante vq=hd1080
             modalIframe.src = `https://drive.google.com/file/d/${videoId}/preview?vq=hd1080&hd=1&t=1s`;
             
             modal.classList.add('active');
