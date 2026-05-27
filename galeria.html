@@ -19,10 +19,10 @@
             --color-glass: rgba(45, 20, 18, 0.45); /* Menor opacidad y tono bronce marciano para mayor contraste */
             --color-border: rgba(255, 85, 51, 0.28); /* Borde ligeramente más definido */
             --color-grid: rgba(255, 85, 51, 0.08);
+            --color-card-hover: rgba(255, 85, 51, 0.04); /* Sutil iluminación interior en hover */
         }
 
         /* --- VERSIÓN HUD DE DÍA (TELEMETRÍA SOLAR) --- */
-        /* Todo el naranja pasa a azul eléctrico y las tarjetas a gris claro tecnológico destacando sobre el fondo */
         body.day-mode {
             --color-bg: #f8fafc; /* Fondo gris claro Slate-50 muy limpio */
             --color-mars: #0052ff; /* Azul eléctrico de alta visibilidad */
@@ -32,6 +32,7 @@
             --color-glass: rgba(226, 232, 240, 0.6); /* Más translúcido y suave en modo diurno */
             --color-border: rgba(0, 82, 255, 0.45); /* Borde azul más marcado para destacar */
             --color-grid: rgba(0, 82, 255, 0.08);
+            --color-card-hover: rgba(0, 82, 255, 0.04); /* Sutil iluminación azul en hover */
         }
 
         /* --- ESTILOS GENERALES --- */
@@ -220,7 +221,7 @@
             opacity: 0.9;
         }
 
-        /* --- BOTÓN INMERSIVO DE RETORNO (CORREGIDO CON FONDO TRANSPARENTE E INTUITIVO) --- */
+        /* --- BOTÓN INMERSIVO DE RETORNO (CON FONDO TRANSPARENTE E INTUITIVO) --- */
         .btn-return {
             display: inline-flex;
             align-items: center;
@@ -333,10 +334,12 @@
             transition: all 0.3s ease;
         }
 
+        /* MODIFICACIÓN: Iluminación de toda la tarjeta en hover de modo sutil e integrado */
         .project-card:hover {
             transform: translateY(-5px);
+            background: var(--color-card-hover); /* Sutil tinte del fondo completo */
             border-color: var(--color-mars);
-            box-shadow: 0 12px 30px var(--color-mars-glow), inset 0 0 15px rgba(255, 85, 51, 0.05);
+            box-shadow: 0 12px 30px var(--color-mars-glow);
         }
 
         .project-card:hover::before, .project-card:hover::after {
@@ -884,7 +887,7 @@
             { id: 19, student: "Pablo Marí­n", title: "Ecos de Marte", desc: "La escena representa una visión futurista de Marte convertida en un espacio de abandono tecnológico y exploración olvidada.", class: "2º DG", group: "Grupo C", videoId: "1UV5ADlhk2GDDcn-Lm_4GrhNXRO5Q4oUt" },
             { id: 20, student: "Pilar Gormedino", title: "El Marte que nadie imaginó", desc: "Un proyecto con el que he querido desafiar la estética clásica de Marte. El objetivo era  transformarlo en un oasis flotante y dinámico, a través de las diferentes plataformas suspendidas en el aire. Es una escena compuesta con elementos naturales y personajes inhumanos interactuando entre sí, de manera amigable disfrutando del Diseña Fest ' 26.", class: "2º DG", group: "Grupo C", videoId: "1b3HwF4fDfIhCR7S01v_Q-BmMCfCftKqt" },
             { id: 21, student: "Sara Gentil", title: "El viaje de la idea", desc: "Se trata de un recorrido que hace una bola 'la idea' a través de arquitecturas surrealistas sobre un lago en Marte. La bola asciende por escaleras y cruza arcos de manera fluida, simbolizando el proceso creativo hasta que aterriza y se asienta como punto de Diseña Fest. Completando la identidad.", class: "2º DG", group: "Grupo C", videoId: "1Ib6MWlcpqi7Y4KBYUEd45D94UVtMAzDk" },
-            { id: 22, student: "Sara Tejeda", title: "Información no registrada", desc: "Señal recuperada por la terminal. Composición en 3D que reconstruye un fragmento de la superficie marciana.", class: "2º DG", group: "Grupo A", videoId: "1avI7n9yMJVfL5kKQIXhJmq0i5sxP_AYS" },
+            { id: 22, student: "Sara Tejeda", title: "La llegada al planeta Rojo", desc: "Este es el momento de la llegada a Marte, siendo una primera exploración de su entorno y extrañas características que fusionan elementos fríos con cálidos. Esta senda le conduce a la cima de una montaña rocosa, sobre la que se encuentra con el anuncio del “Diseña Fest 26”.", class: "2º DG", group: "Grupo A", videoId: "1avI7n9yMJVfL5kKQIXhJmq0i5sxP_AYS" },
         ];
 
         // --- 2. RENDERIZADO PROCEDIMENTAL DE LAS TARJETAS ---
@@ -894,8 +897,6 @@
             const card = document.createElement('section');
             card.className = 'project-card';
             // CLAVE: Inyectamos el parámetro nativo '#t=1' al final del ID en la llamada del thumbnail de Google Drive.
-            // sz=w600 se procesa por el servidor y el hash del cliente fuerza la captura al segundo 1.
-            // Inyectamos de nuevo la línea de radar dinámica (<div class="hud-scanning-line"></div>).
             card.innerHTML = `
                 <div>
                     <div class="video-box" style="background-image: url('https://drive.google.com/thumbnail?id=${p.videoId}&sz=w600#t=1');">
@@ -1023,13 +1024,11 @@
                 const grad = canvasCtx.createRadialGradient(gc.x, gc.y, 0, gc.x, gc.y, gc.radius);
                 
                 // MULTIPLICADORES DE CONTRASTE OPTIMIZADOS PARA MÁXIMA VISIBILIDAD
-                // Aumentamos considerablemente los multiplicadores base (en modo día a 2.4 y en modo noche a 1.6)
                 const op = isDayMode ? gc.opacity * 2.4 : gc.opacity * 1.6; 
                 
                 // Mapeo dinámico de gas de naranja a azul eléctrico en modo día
                 let activeColor = gc.color;
                 if (isDayMode) {
-                    // Colores de plasma diurnos más profundos (azul eléctrico y zafiro oscuro) para mayor peso visual
                     activeColor = gc.color.includes('235') ? 'rgba(0, 82, 255, ' : 'rgba(0, 120, 255, ';
                 }
                 
@@ -1118,7 +1117,7 @@
             modalTitle.innerText = title;
             modalStudent.innerText = student;
             
-            // CLAVE: Forzamos la reproducción en calidad Full HD 1080p inyectando los parámetros de calidad vq=hd1080&hd=1&t=1s
+            // Calidad Full HD
             modalIframe.src = `https://drive.google.com/file/d/${videoId}/preview?vq=hd1080&hd=1&t=1s`;
             
             modal.classList.add('active');
@@ -1251,6 +1250,12 @@
             if (audioCtx) {
                 playClickSound();
             }
+        });
+
+        // --- CLAVE: SOLUCIÓN COMPATIBILIDAD CON CACHÉ DE SALIDA (Para evitar transiciones residuales) ---
+        window.addEventListener('pagehide', () => {
+            // Limpia cualquier estado al salir
+            closeWarpModal();
         });
     </script>
 </body>
