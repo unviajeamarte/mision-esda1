@@ -976,7 +976,7 @@
         let warpSpeed = 0.01; 
 
         const targetZ = 5.2; 
-        const speedFactor = 0.007; // Mantenemos la velocidad de aproximación lenta inicial exactamente como estaba
+        const speedFactor = 0.007; 
 
         const mouse = new THREE.Vector2();
         const targetRotation = new THREE.Vector2();
@@ -2007,6 +2007,12 @@
             score = 0;
             lives = 5; // CLAVE: Inicializa a 5 vidas
             player.x = 185;
+            
+            // CORRECCIÓN SOLICITADA: Forzamos la limpieza absoluta de las teclas de dirección al reiniciar
+            // para que la nave no se mueva sola de forma incontrolada hacia un lateral debido al buffer persistente del navegador.
+            player.movingLeft = false;
+            player.movingRight = false;
+            
             bullets = [];
             enemies = [];
             particles = [];
@@ -2065,7 +2071,7 @@
                     player.damageTimer--;
                 }
 
-                // --- RENDERIZADO DE LA NAVE ESPACIAL CON DAÑO INTERACTIVO ---
+                // --- CLAVE: RENDERIZADO DE LA NAVE ESPACIAL ---
                 // Fuego de los propulsores traseros (parpadeante procedimental)
                 if (player.movingLeft || player.movingRight || Math.random() > 0.3) {
                     ctx.strokeStyle = '#ff3a0c';
@@ -2077,7 +2083,7 @@
                     ctx.stroke();
                 }
 
-                // Chasis principal de la nave aliada con cambio de color reactivo (Parpadea blanco y rojo sólido)
+                // Chasis principal de la nave con parpadeo de color reactivo al daño
                 let shipStrokeColor = '#ff5533';
                 let shipFillColor = 'rgba(255, 85, 51, 0.2)';
                 if (player.damageTimer > 0 && Math.floor(player.damageTimer / 3) % 2 === 0) {
@@ -2090,6 +2096,7 @@
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 
+                // Geometría estilizada de nave de combate espacial
                 ctx.moveTo(player.x + player.width / 2, player.y); // Punta/cabina delantera
                 ctx.lineTo(player.x + player.width * 0.7, player.y + player.height * 0.4); // Ala derecha superior
                 ctx.lineTo(player.x + player.width, player.y + player.height * 0.7); // Ala derecha punta
@@ -2259,7 +2266,7 @@
                 ctx.textAlign = 'left';
 
             } else if (gameMode === "REGISTRATION") {
-                // Pantalla de Grabación de Registro de Iniciales (Ampliado a 6 letras)
+                // Pantalla de Grabación de Registro de Iniciales (6 letras)
                 ctx.fillStyle = '#ff1155';
                 ctx.font = "bold 18px 'Montserrat', sans-serif";
                 ctx.textAlign = 'center';
@@ -2286,7 +2293,7 @@
                 ctx.textAlign = 'left';
 
             } else if (gameMode === "GAMEOVER") {
-                // Fin de Partida Normal sin récord (Añadido GAME OVER explícito)
+                // Fin de Partida Normal sin récord (Añadido GAME OVER de derrota)
                 ctx.fillStyle = '#ff1155';
                 ctx.font = "bold 20px 'Montserrat', sans-serif";
                 ctx.textAlign = 'center';
@@ -2377,7 +2384,7 @@
                     e.preventDefault();
                 }
             } else if (gameMode === "REGISTRATION") {
-                // Entrada de caracteres de texto para iniciales de récord (Ampliado a 6)
+                // Entrada de caracteres de texto para iniciales de récord (6 letras)
                 if (e.key === 'Backspace') {
                     nameBuffer = nameBuffer.slice(0, -1);
                     playClickSound();
