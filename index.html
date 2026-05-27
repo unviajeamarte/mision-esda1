@@ -515,7 +515,7 @@
         <div class="game-canvas-container">
             <canvas id="arcade-canvas" width="400" height="240"></canvas>
         </div>
-        <div class="game-controls-info">
+        <div class="game-controls-info" id="game-info-bar">
             TECLADO: [A/D] o [←/→] Mover - [ESPACIO] Disparar
         </div>
         <div class="mobile-buttons-bar">
@@ -1560,7 +1560,7 @@
 
         animate();
 
-        // --- EVENTOS E INTERACTIVIDAD (ACTUALIZADO CON SOPORTE POINTER UNIFICADO PARA MOBILE Y DESKTOP) ---
+        // --- EVENTOS E INTERACTIVIDAD (SOPORTE POINTER UNIFICADO PARA MOBILE Y DESKTOP) ---
 
         // Escuchamos pointermove para actualizar de forma instantánea tanto en móviles, lápiz óptico como en ratón
         window.addEventListener('pointermove', (event) => {
@@ -1625,7 +1625,7 @@
                 hintEl.style.opacity = '0';
                 hudPanel.style.opacity = '0';
                 
-                // CLAVE: Desvanecemos también la caja completa de interactivos del HUD para que no queden pegados
+                // Desvanecemos también la caja completa de interactivos del HUD para que no queden pegados
                 const hudInteractive = document.getElementById('hud-interactive');
                 if (hudInteractive) {
                     hudInteractive.style.opacity = '0';
@@ -1663,22 +1663,67 @@
         const holoFrame = document.getElementById('holo-frame');
         const arcadeCanvas = document.getElementById('arcade-canvas');
         const ctx = arcadeCanvas.getContext('2d');
+        const gameInfoBar = document.getElementById('game-info-bar');
 
         // Configuración y variables de estado del minijuego
         let gameLoopId = null;
         let gameActive = false;
+        let gameMode = "START"; // START, PLAYING, REGISTRATION, GAMEOVER
         let score = 0;
-        let lives = 3;
+        let lives = 5; // CLAVE: Incrementado de 3 a 5 vidas
+        let nameBuffer = ""; // Iniciales de puntuación (6 caracteres autorizados)
+        let arcadeMusicInterval = null; // Intervalo para la música procedural de 8 bits
+        let arcadeMusicStep = 0;
+
+        // Estructura de Persistencia Local de Puntuaciones (Top 3)
+        let highScores = [];
+        const STORAGE_KEY = "mars_arcade_scores_v1";
+
+        function loadHighScores() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                highScores = JSON.parse(saved);
+            } else {
+                // Registros de pilotos de simulación de fábrica (Estructura de 6 letras por defecto)
+                highScores = [
+                    { name: "ESDA01", score: 150 },
+                    { name: "NAVIGA", score: 80 },
+                    { name: "MARS99", score: 40 }
+                ];
+                saveHighScores();
+            }
+        }
+
+        function saveHighScores() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(highScores));
+        }
+
+        function checkNewRecord(currentScore) {
+            if (highScores.length < 3) return true;
+            return currentScore > highScores[highScores.length - 1].score;
+        }
+
+        function insertHighScore(name, score) {
+            highScores.push({ name: name.toUpperCase(), score: score });
+            // Ordenar de mayor a menor y mantener solo los 3 primeros
+            highScores.sort((a, b) => b.score - a.score);
+            highScores = highScores.slice(0, 3);
+            saveHighScores();
+        }
+
+        // Cargar registros inicialmente
+        loadHighScores();
 
         // Entidades de la simulación
         let player = {
             x: 185,
             y: 210,
-            width: 32, // un poco más ancha para detalles vectoriales
+            width: 32,
             height: 18,
             speed: 4.5,
             movingLeft: false,
-            movingRight: false
+            movingRight: false,
+            damageTimer: 0 // Registrador dinámico para el parpadeo de daño
         };
 
         let bullets = [];
@@ -1694,6 +1739,147 @@
                 size: 1 + Math.random() * 2,
                 speed: 0.5 + Math.random() * 1.2
             });
+        }
+
+        // --- 🎵 SISTEMA DE AUDIO PROCEDURAL DEL ARCADE (SÍNTESIS DE 8 BITS) ---
+        
+        // Jingle de Nuevo Récord (Arpegio ascendente brillante, saltarín y muy divertido de 8 bits)
+        function playNewRecordJingle() {
+            const ctxAudio = getAudioContext();
+            if (!ctxAudio) return;
+            const now = ctxAudio.currentTime;
+            
+            // CLAVE: Melodía saltarina, alegre e híper divertida de 8 notas para celebrar el récord
+            const melody = [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50, 1174.66, 1318.51];
+            const noteDurations = [0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.12, 0.35];
+            const noteDelays = [0, 0.08, 0.16, 0.24, 0.32, 0.40, 0.48, 0.60];
+
+            melody.forEach((freq, idx) => {
+                const osc = ctxAudio.createOscillator();
+                const gain = ctxAudio.createGain();
+                osc.type = idx % 2 === 0 ? 'square' : 'triangle'; // Alterna texturas para un sonido retro bouncier
+                osc.frequency.setValueAtTime(freq, now + noteDelays[idx]);
+                
+                // Pequeño vibrato/desborde feliz de tono en la nota triunfal final
+                if (idx === melody.length - 1) {
+                    osc.frequency.linearRampToValueAtTime(freq * 1.05, now + noteDelays[idx] + 0.3);
+                }
+
+                gain.gain.setValueAtTime(0.02, now + noteDelays[idx]);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + noteDelays[idx] + noteDurations[idx]);
+                
+                osc.connect(gain);
+                gain.connect(ctxAudio.destination);
+                
+                osc.start(now + noteDelays[idx]);
+                osc.stop(now + noteDelays[idx] + noteDurations[idx] + 0.05);
+                
+                osc.onended = () => {
+                    osc.disconnect();
+                    gain.disconnect();
+                };
+            });
+        }
+
+        // Jingle de Game Over Normal (Arpegio descendente melancólico)
+        function playGameOverJingle() {
+            const ctxAudio = getAudioContext();
+            if (!ctxAudio) return;
+            const now = ctxAudio.currentTime;
+            const notes = [220.0, 196.0, 174.6, 146.8]; // Notas descendentes tristes
+            notes.forEach((freq, idx) => {
+                const osc = ctxAudio.createOscillator();
+                const gain = ctxAudio.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(freq, now + idx * 0.15);
+                gain.gain.setValueAtTime(0.02, now + idx * 0.15);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.15 + 0.25);
+                osc.connect(gain);
+                gain.connect(ctxAudio.destination);
+                osc.start(now + idx * 0.15);
+                osc.stop(now + idx * 0.15 + 0.35);
+                osc.onended = () => {
+                    osc.disconnect();
+                    gain.disconnect();
+                };
+            });
+        }
+
+        // Secuenciador de la Música en Bucle de 8 bits durante el juego
+        function startArcadeMusic() {
+            stopArcadeMusic(); // Aseguramos limpieza previa
+            arcadeMusicStep = 0;
+
+            // Bajos de 8 bits (Onda triangular suave y rítmica)
+            const bassArr = [
+                55.0, 55.0, 55.0, 55.0,       // La1
+                65.4, 65.4, 65.4, 65.4,       // Do2
+                73.4, 73.4, 73.4, 73.4,       // Re2
+                82.4, 82.4, 82.4, 82.4        // Mi2
+            ];
+
+            // Melodía principal alegre (Onda cuadrada clásica de 8 bits de bajo volumen)
+            const melArr = [
+                220.0, 0, 220.0, 261.6, 329.6, 0, 329.6, 261.6,
+                293.7, 0, 293.7, 349.2, 440.0, 0, 440.0, 392.0
+            ];
+
+            const stepTime = 185; // Duración en milisegundos de cada paso del secuenciador (~130 BPM)
+
+            arcadeMusicInterval = setInterval(() => {
+                if (gameMode !== "PLAYING" || !holoFrame.classList.contains('active')) {
+                    stopArcadeMusic();
+                    return;
+                }
+                const ctxAudio = getAudioContext();
+                if (!ctxAudio) return;
+                const now = ctxAudio.currentTime;
+
+                // 1. Sintetizar canal de bajos (Triangle)
+                const bassFreq = bassArr[arcadeMusicStep % bassArr.length];
+                const bassOsc = ctxAudio.createOscillator();
+                const bassGain = ctxAudio.createGain();
+                bassOsc.type = 'triangle';
+                bassOsc.frequency.setValueAtTime(bassFreq, now);
+                bassGain.gain.setValueAtTime(0.04, now);
+                bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+                bassOsc.connect(bassGain);
+                bassGain.connect(ctxAudio.destination);
+                bassOsc.start(now);
+                bassOsc.stop(now + 0.18);
+                bassOsc.onended = () => {
+                    bassOsc.disconnect();
+                    bassGain.disconnect();
+                };
+
+                // 2. Sintetizar canal de melodía (Square)
+                const melFreq = melArr[arcadeMusicStep % melArr.length];
+                if (melFreq > 0) {
+                    const melOsc = ctxAudio.createOscillator();
+                    const melGain = ctxAudio.createGain();
+                    melOsc.type = 'square';
+                    melOsc.frequency.setValueAtTime(melFreq, now);
+                    melGain.gain.setValueAtTime(0.012, now); // Volumen de melodía muy controlado para evitar molestias
+                    melGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                    melOsc.connect(melGain);
+                    melGain.connect(ctxAudio.destination);
+                    melOsc.start(now);
+                    melOsc.stop(now + 0.14);
+                    melOsc.onended = () => {
+                        melOsc.disconnect();
+                        melGain.disconnect();
+                    };
+                }
+
+                arcadeMusicStep++;
+            }, stepTime);
+        }
+
+        function stopArcadeMusic() {
+            if (arcadeMusicInterval) {
+                clearInterval(arcadeMusicInterval);
+                arcadeMusicInterval = null;
+            }
         }
 
         // Generar un sonido de disparo synth retro (Web Audio API)
@@ -1748,17 +1934,42 @@
             };
         }
 
+        // Sonido sordo al chocar o recibir daño
+        function playDamageSynth() {
+            const ctxAudio = getAudioContext();
+            if (!ctxAudio) return;
+            const osc = ctxAudio.createOscillator();
+            const gainNode = ctxAudio.createGain();
+
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(120, ctxAudio.currentTime);
+            osc.frequency.linearRampToValueAtTime(10, ctxAudio.currentTime + 0.4);
+
+            gainNode.gain.setValueAtTime(0.2, ctxAudio.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, ctxAudio.currentTime + 0.4);
+
+            osc.connect(gainNode);
+            gainNode.connect(ctxAudio.destination);
+
+            osc.start();
+            osc.stop(ctxAudio.currentTime + 0.4);
+
+            osc.onended = () => {
+                osc.disconnect();
+                gainNode.disconnect();
+            };
+        }
+
         // Lógica de spawn de enemigos
         function spawnEnemy() {
-            if (!gameActive) return;
-            // CLAVE 1: Disminución de velocidad para que bajen más despacio
+            if (gameMode !== "PLAYING") return;
             // Spawn de marcianos en el eje X aleatorio
             enemies.push({
                 x: Math.random() * (arcadeCanvas.width - 24) + 4,
                 y: -15,
                 width: 24, // un pelín más anchos para la silueta del calamar
                 height: 16,
-                speed: 0.6 + Math.random() * 0.4, // Caída un 60% más lenta para jugabilidad perfecta
+                speed: 0.6 + Math.random() * 0.4, // Caída lenta para jugabilidad perfecta
                 pulseOffset: Math.random() * Math.PI
             });
         }
@@ -1780,7 +1991,7 @@
 
         // Disparo de láser de la nave
         function shootLaser() {
-            if (!gameActive) return;
+            if (gameMode !== "PLAYING") return;
             bullets.push({
                 x: player.x + player.width / 2 - 1.5,
                 y: player.y,
@@ -1794,12 +2005,16 @@
         // Reset completo del minijuego
         function resetGame() {
             score = 0;
-            lives = 3;
+            lives = 5; // CLAVE: Inicializa a 5 vidas
             player.x = 185;
             bullets = [];
             enemies = [];
             particles = [];
-            gameActive = true;
+            nameBuffer = "";
+            player.damageTimer = 0; // Reseteamos parpadeo inicial
+            gameMode = "PLAYING";
+            gameInfoBar.innerText = "TECLADO: [A/D] o [←/→] Mover - [ESPACIO] Disparar";
+            startArcadeMusic(); // CLAVE: Iniciamos el loop de la música procedural
         }
 
         // Bucle de físicas y renderizado del minijuego
@@ -1809,7 +2024,6 @@
             ctx.fillRect(0, 0, arcadeCanvas.width, arcadeCanvas.height);
 
             // Renderizar y desplazar estrellas de fondo de 8 bits
-            ctx.fillStyle = '#rgba(255, 255, 255, 0.4)';
             for (let i = 0; i < arcadeStars.length; i++) {
                 let s = arcadeStars[i];
                 s.y += s.speed;
@@ -1837,7 +2051,7 @@
                 ctx.stroke();
             }
 
-            if (gameActive) {
+            if (gameMode === "PLAYING") {
                 // Mover jugador
                 if (player.movingLeft && player.x > 0) {
                     player.x -= player.speed;
@@ -1846,7 +2060,12 @@
                     player.x += player.speed;
                 }
 
-                // --- CLAVE: RENDERIZADO DE LA NUEVA NAVE ESPACIAL EN 8 BITS (CAZA DETALLADO) ---
+                // Decrementar contador de daño visual
+                if (player.damageTimer > 0) {
+                    player.damageTimer--;
+                }
+
+                // --- RENDERIZADO DE LA NAVE ESPACIAL CON DAÑO INTERACTIVO ---
                 // Fuego de los propulsores traseros (parpadeante procedimental)
                 if (player.movingLeft || player.movingRight || Math.random() > 0.3) {
                     ctx.strokeStyle = '#ff3a0c';
@@ -1858,13 +2077,19 @@
                     ctx.stroke();
                 }
 
-                // Chasis principal de la nave aliada
-                ctx.strokeStyle = '#ff5533';
-                ctx.fillStyle = 'rgba(255, 85, 51, 0.2)';
+                // Chasis principal de la nave aliada con cambio de color reactivo (Parpadea blanco y rojo sólido)
+                let shipStrokeColor = '#ff5533';
+                let shipFillColor = 'rgba(255, 85, 51, 0.2)';
+                if (player.damageTimer > 0 && Math.floor(player.damageTimer / 3) % 2 === 0) {
+                    shipStrokeColor = '#ffffff'; // Blanco brillante de impacto
+                    shipFillColor = 'rgba(255, 17, 85, 0.85)'; // Rojo sólido
+                }
+
+                ctx.strokeStyle = shipStrokeColor;
+                ctx.fillStyle = shipFillColor;
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 
-                // Geometría estilizada de nave de combate espacial
                 ctx.moveTo(player.x + player.width / 2, player.y); // Punta/cabina delantera
                 ctx.lineTo(player.x + player.width * 0.7, player.y + player.height * 0.4); // Ala derecha superior
                 ctx.lineTo(player.x + player.width, player.y + player.height * 0.7); // Ala derecha punta
@@ -1888,7 +2113,6 @@
                 ctx.fillRect(player.x, player.y + player.height * 0.5, 2, 4);
                 ctx.fillRect(player.x + player.width - 2, player.y + player.height * 0.5, 2, 4);
 
-
                 // Actualizar y renderizar proyectiles
                 ctx.fillStyle = '#00ff66';
                 for (let i = bullets.length - 1; i >= 0; i--) {
@@ -1911,7 +2135,7 @@
                     const waveOffset = Math.sin(Date.now() * 0.005 + e.pulseOffset) * 0.55;
                     e.x += waveOffset;
 
-                    // CLAVE 2: Dibujar marciano con silueta de "Calamar Espacial" 8-bits retro glowing muy original
+                    // Dibujar marciano con silueta de "Calamar Espacial" 8-bits retro glowing muy original
                     ctx.strokeStyle = '#00ffff';
                     ctx.fillStyle = 'rgba(0, 255, 255, 0.15)';
                     ctx.lineWidth = 1.5;
@@ -1939,6 +2163,27 @@
                     ctx.fillRect(e.x + e.width * 0.3, e.y + e.height * 0.3, 2, 2);
                     ctx.fillRect(e.x + e.width * 0.6, e.y + e.height * 0.3, 2, 2);
 
+                    // --- COMPROBAR COLISIÓN FÍSICA DIRECTA CON NUESTRA NAVE ---
+                    const collidedWithPlayer = (
+                        e.x < player.x + player.width &&
+                        e.x + e.width > player.x &&
+                        e.y < player.y + player.height &&
+                        e.y + e.height > player.y
+                    );
+
+                    if (collidedWithPlayer) {
+                        createExplosion(e.x, e.y);
+                        playDamageSynth(); // Sonido de daño sordo
+                        player.damageTimer = 30; // Se activa el parpadeo de daño
+                        enemies.splice(i, 1);
+                        lives--;
+                        
+                        if (lives <= 0) {
+                            triggerGameOver();
+                        }
+                        continue;
+                    }
+
                     // Comprobar colisión con proyectiles
                     for (let j = bullets.length - 1; j >= 0; j--) {
                         let b = bullets[j];
@@ -1957,12 +2202,14 @@
                         }
                     }
 
-                    // Comprobar si cruzan la línea o chocan contra el jugador
+                    // Comprobar si cruzan la línea de fondo de pantalla
                     if (e.y > arcadeCanvas.height) {
                         enemies.splice(i, 1);
                         lives--;
+                        playDamageSynth();
+                        player.damageTimer = 30; // También parpadea al perder vida por escape
                         if (lives <= 0) {
-                            gameActive = false;
+                            triggerGameOver();
                         }
                     }
                 }
@@ -1986,23 +2233,89 @@
                 ctx.fillStyle = '#ffffff';
                 ctx.font = "bold 9px 'Montserrat', sans-serif";
                 ctx.fillText(`PUNTOS: ${score}`, 12, 20);
-                ctx.fillText(`VIDAS: ${'❤️'.repeat(lives)}`, arcadeCanvas.width - 95, 20);
+                ctx.fillText(`VIDAS: ${'❤️'.repeat(lives)}`, arcadeCanvas.width - 120, 20); // Ajustado para dar cabida a los 5 corazones
 
-            } else {
-                // Pantalla de Game Over / Espera - Identidad Mars Arcade
+            } else if (gameMode === "START") {
+                // Pantalla de Inicio / Menú de Bienvenida con Récords
                 ctx.fillStyle = '#ff5533';
-                ctx.font = "bold 16px 'Montserrat', sans-serif";
+                ctx.font = "bold 18px 'Montserrat', sans-serif";
                 ctx.textAlign = 'center';
-                ctx.fillText("MARS ARCADE", arcadeCanvas.width / 2, arcadeCanvas.height / 2 - 20);
-                
+                ctx.fillText("MARS ARCADE", arcadeCanvas.width / 2, 45);
+
+                // Rejilla de mejores puntuaciones (TOP 3)
+                ctx.fillStyle = '#00ffff';
+                ctx.font = "bold 10px 'Montserrat', sans-serif";
+                ctx.fillText("--- MEJORES PILOTOS ---", arcadeCanvas.width / 2, 85);
+
                 ctx.fillStyle = '#ffffff';
                 ctx.font = "9px 'Montserrat', sans-serif";
-                ctx.fillText(`PUNTUACIÓN MÁXIMA OBTENIDA: ${score}`, arcadeCanvas.width / 2, arcadeCanvas.height / 2 + 10);
-                
+                highScores.forEach((h, idx) => {
+                    ctx.fillText(`${idx + 1}.   ${h.name}   ............   ${h.score} PTS`, arcadeCanvas.width / 2, 110 + idx * 20);
+                });
+
                 ctx.fillStyle = '#00ff66';
                 ctx.font = "bold 10px 'Montserrat', sans-serif";
-                ctx.fillText("HAZ CLICK PARA INICIAR PROTOCOLO", arcadeCanvas.width / 2, arcadeCanvas.height / 2 + 40);
-                ctx.textAlign = 'left'; // Reset alignment
+                ctx.fillText("HAZ CLICK PARA INICIAR PROTOCOLO", arcadeCanvas.width / 2, 195);
+                ctx.textAlign = 'left';
+
+            } else if (gameMode === "REGISTRATION") {
+                // Pantalla de Grabación de Registro de Iniciales (Ampliado a 6 letras)
+                ctx.fillStyle = '#ff1155';
+                ctx.font = "bold 18px 'Montserrat', sans-serif";
+                ctx.textAlign = 'center';
+                ctx.fillText("GAME OVER", arcadeCanvas.width / 2, 45);
+
+                ctx.fillStyle = '#00ffff';
+                ctx.font = "bold 11px 'Montserrat', sans-serif";
+                ctx.fillText("¡NUEVA MARCA EN ÓRBITA!", arcadeCanvas.width / 2, 75);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = "bold 9px 'Montserrat', sans-serif";
+                ctx.fillText(`PUNTUACIÓN OBTENIDA: ${score} PTS`, arcadeCanvas.width / 2, 100);
+
+                ctx.fillStyle = '#ff5533';
+                ctx.font = "bold 20px 'Montserrat', sans-serif";
+                
+                // Efecto de iniciales vacías para rellenar (Hasta 6 letras)
+                let displayInitials = nameBuffer.padEnd(6, "_");
+                ctx.fillText(displayInitials.split("").join(" "), arcadeCanvas.width / 2, 140);
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.font = "8px 'Montserrat', sans-serif";
+                ctx.fillText("ESCRIBE 6 LETRAS EN TU TECLADO O PULSA LOS BOTONES", arcadeCanvas.width / 2, 180);
+                ctx.textAlign = 'left';
+
+            } else if (gameMode === "GAMEOVER") {
+                // Fin de Partida Normal sin récord (Añadido GAME OVER explícito)
+                ctx.fillStyle = '#ff1155';
+                ctx.font = "bold 20px 'Montserrat', sans-serif";
+                ctx.textAlign = 'center';
+                ctx.fillText("GAME OVER", arcadeCanvas.width / 2, arcadeCanvas.height / 2 - 20);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = "10px 'Montserrat', sans-serif";
+                ctx.fillText(`PUNTUACIÓN FINAL: ${score} PTS`, arcadeCanvas.width / 2, arcadeCanvas.height / 2 + 10);
+
+                ctx.fillStyle = '#00ff66';
+                ctx.font = "bold 10px 'Montserrat', sans-serif";
+                ctx.fillText("HAZ CLICK PARA REINTENTAR", arcadeCanvas.width / 2, arcadeCanvas.height / 2 + 45);
+                ctx.textAlign = 'left';
+            }
+        }
+
+        function triggerGameOver() {
+            gameActive = false;
+            stopArcadeMusic(); // Detener bucle de música
+
+            if (checkNewRecord(score)) {
+                gameMode = "REGISTRATION";
+                nameBuffer = "";
+                gameInfoBar.innerText = "NUEVO RÉCORD: Escribe 6 letras y pulsa ENTER";
+                playNewRecordJingle(); // CLAVE: Jingle triunfal y súper divertido de récord de 8 notas
+            } else {
+                gameMode = "GAMEOVER";
+                gameInfoBar.innerText = "GAME OVER. Haz click en la pantalla para volver al menú.";
+                playGameOverJingle(); // Jingle triste de derrota
             }
         }
 
@@ -2019,7 +2332,8 @@
         btnOpenArcade.addEventListener('click', (e) => {
             playClickSound();
             holoFrame.classList.add('active');
-            resetGame();
+            gameMode = "START";
+            score = 0;
             if (!gameLoopId) {
                 startGameLoop();
             }
@@ -2028,6 +2342,7 @@
 
         btnCloseArcade.addEventListener('click', (e) => {
             playClickSound();
+            stopArcadeMusic(); // Aseguramos detener la música al cerrar
             holoFrame.classList.remove('active');
             gameActive = false;
             cancelAnimationFrame(gameLoopId);
@@ -2035,59 +2350,140 @@
             e.stopPropagation(); // Evitamos que el click se propague al canvas 3D
         });
 
-        // Click en canvas para reiniciar juego si está inactivo
+        // Click en canvas para iniciar o reiniciar según estado
         arcadeCanvas.addEventListener('click', (e) => {
-            if (!gameActive) {
-                playClickSound();
+            playClickSound();
+            if (gameMode === "START" || gameMode === "GAMEOVER") {
                 resetGame();
             }
             e.stopPropagation();
         });
 
-        // Capturar controles del teclado para evitar Scroll de página y mover la nave
+        // Capturar controles del teclado para evitar Scroll de página y mover la nave / escribir nombre
         window.addEventListener('keydown', (e) => {
             if (!holoFrame.classList.contains('active')) return;
             
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
-                player.movingLeft = true;
-                e.preventDefault();
-            }
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
-                player.movingRight = true;
-                e.preventDefault();
-            }
-            if (e.key === ' ' || e.key === 'Spacebar') {
-                shootLaser();
-                e.preventDefault();
+            if (gameMode === "PLAYING") {
+                if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                    player.movingLeft = true;
+                    e.preventDefault();
+                }
+                if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                    player.movingRight = true;
+                    e.preventDefault();
+                }
+                if (e.key === ' ' || e.key === 'Spacebar') {
+                    shootLaser();
+                    e.preventDefault();
+                }
+            } else if (gameMode === "REGISTRATION") {
+                // Entrada de caracteres de texto para iniciales de récord (Ampliado a 6)
+                if (e.key === 'Backspace') {
+                    nameBuffer = nameBuffer.slice(0, -1);
+                    playClickSound();
+                    e.preventDefault();
+                } else if (e.key === 'Enter') {
+                    if (nameBuffer.length > 0) {
+                        insertHighScore(nameBuffer, score);
+                        gameMode = "START";
+                        playWarpSound();
+                    }
+                    e.preventDefault();
+                } else if (e.key.length === 1 && /[a-zA-Z0-9]/i.test(e.key)) {
+                    if (nameBuffer.length < 6) { // Límite de 6 caracteres
+                        nameBuffer += e.key.toUpperCase();
+                        playClickSound();
+                    }
+                    e.preventDefault();
+                }
             }
         });
 
         window.addEventListener('keyup', (e) => {
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
-                player.movingLeft = false;
-            }
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
-                player.movingRight = false;
+            if (gameMode === "PLAYING") {
+                if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                    player.movingLeft = false;
+                }
+                if (gameMode === "PLAYING" && (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D')) {
+                    player.movingRight = false;
+                }
             }
         });
 
-        // --- BOTONES PARA DISPOSITIVOS MÓVILES ---
+        // --- BOTONES PARA DISPOSITIVOS MÓVILES (ADAPTADO AL REGISTRO DE NOMBRE DE 6 LETRAS) ---
         const btnLeft = document.getElementById('m-btn-left');
         const btnRight = document.getElementById('m-btn-right');
         const btnFire = document.getElementById('m-btn-fire');
 
-        btnLeft.addEventListener('mousedown', (e) => { player.movingLeft = true; e.stopPropagation(); });
+        btnLeft.addEventListener('mousedown', (e) => { 
+            if (gameMode === "PLAYING") {
+                player.movingLeft = true; 
+            } else if (gameMode === "REGISTRATION") {
+                // Borrar letra en móvil
+                nameBuffer = nameBuffer.slice(0, -1);
+                playClickSound();
+            }
+            e.stopPropagation(); 
+        });
+        
+        btnLeft.addEventListener('touchstart', (e) => { 
+            if (gameMode === "PLAYING") {
+                player.movingLeft = true; 
+            } else if (gameMode === "REGISTRATION") {
+                nameBuffer = nameBuffer.slice(0, -1);
+                playClickSound();
+            }
+            e.preventDefault(); 
+            e.stopPropagation(); 
+        });
+
         btnLeft.addEventListener('mouseup', (e) => { player.movingLeft = false; e.stopPropagation(); });
-        btnLeft.addEventListener('touchstart', (e) => { player.movingLeft = true; e.preventDefault(); e.stopPropagation(); });
         btnLeft.addEventListener('touchend', (e) => { player.movingLeft = false; e.stopPropagation(); });
 
-        btnRight.addEventListener('mousedown', (e) => { player.movingRight = true; e.stopPropagation(); });
+        btnRight.addEventListener('mousedown', (e) => { 
+            if (gameMode === "PLAYING") {
+                player.movingRight = true; 
+            } else if (gameMode === "REGISTRATION") {
+                // Generar letra aleatoria en móviles si no se cuenta con teclado fí­sico
+                const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+                if (nameBuffer.length < 6) { // Límite de 6 caracteres
+                    nameBuffer += chars[Math.floor(Math.random() * chars.length)];
+                    playClickSound();
+                }
+            }
+            e.stopPropagation(); 
+        });
+        
+        btnRight.addEventListener('touchstart', (e) => { 
+            if (gameMode === "PLAYING") {
+                player.movingRight = true; 
+            } else if (gameMode === "REGISTRATION") {
+                const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+                if (nameBuffer.length < 6) { // Límite de 6 caracteres
+                    nameBuffer += chars[Math.floor(Math.random() * chars.length)];
+                    playClickSound();
+                }
+            }
+            e.preventDefault(); 
+            e.stopPropagation(); 
+        });
+
         btnRight.addEventListener('mouseup', (e) => { player.movingRight = false; e.stopPropagation(); });
-        btnRight.addEventListener('touchstart', (e) => { player.movingRight = true; e.preventDefault(); e.stopPropagation(); });
         btnRight.addEventListener('touchend', (e) => { player.movingRight = false; e.stopPropagation(); });
 
         btnFire.addEventListener('click', (e) => {
-            shootLaser();
+            if (gameMode === "PLAYING") {
+                shootLaser();
+            } else if (gameMode === "REGISTRATION") {
+                // Confirmar nombre en móvil
+                if (nameBuffer.length > 0) {
+                    insertHighScore(nameBuffer, score);
+                    gameMode = "START";
+                    playWarpSound();
+                }
+            } else if (gameMode === "START" || gameMode === "GAMEOVER") {
+                resetGame();
+            }
             e.preventDefault();
             e.stopPropagation();
         });
