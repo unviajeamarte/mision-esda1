@@ -58,7 +58,7 @@
             flex-direction: column;
         }
 
-        /* Fondo dinámico de gas vaporoso de aterrizaje y destellos */
+        /* Fondo dinámico de gas de aterrizaje y destellos */
         #gas-background {
             position: fixed;
             top: 0;
@@ -123,7 +123,7 @@
             position: absolute;
             top: 35px;
             left: 20px;
-            height: 38px; /* Misma altura que el botón del sol/luna */
+            height: 38px; 
             display: flex;
             align-items: center;
             z-index: 10;
@@ -134,28 +134,25 @@
             width: auto;
             opacity: 0.85;
             transition: opacity 0.3s ease, filter 0.3s ease;
-            /* Fuerza a que el logotipo original se vuelva completamente blanco brillante */
             filter: brightness(0) invert(1);
         }
 
         .logo-esda:hover {
             opacity: 1;
-            /* Mantiene el logotipo en blanco y le suma el sutil resplandor marciano */
             filter: brightness(0) invert(1) drop-shadow(0 0 6px var(--color-mars-glow));
         }
 
         body.day-mode .logo-esda {
-            filter: brightness(0) opacity(0.85); /* Filtro oscuro en modo día */
+            filter: brightness(0) opacity(0.85); 
         }
 
         body.day-mode .logo-esda:hover {
             filter: brightness(0) opacity(1) drop-shadow(0 0 6px var(--color-mars-glow));
         }
 
-        /* Ajuste responsive para pantallas pequeñas */
         @media (max-width: 900px) {
             header {
-                padding-top: 110px; /* Deja espacio para el logo y botón arriba */
+                padding-top: 110px; 
             }
             .logo-container {
                 position: absolute;
@@ -173,7 +170,7 @@
         }
 
         .hud-subtitle {
-            font-family: 'Montserrat', sans-serif; /* Tipografía destacada HUD */
+            font-family: 'Montserrat', sans-serif; 
             font-size: 0.85rem;
             color: var(--color-mars);
             letter-spacing: 4px;
@@ -202,7 +199,7 @@
         .edition-tag {
             font-family: 'Montserrat', sans-serif;
             font-size: 0.8rem;
-            color: var(--text-secondary);
+            color: var(--color-text-secondary);
             letter-spacing: 2px;
             text-transform: uppercase;
             font-weight: 500;
@@ -242,9 +239,9 @@
             height: 48px;
             border: 1px solid var(--color-border);
             border-radius: 50%;
-            background: transparent; /* Fondo completamente transparente */
+            background: transparent; 
             color: var(--color-mars);
-            backdrop-filter: blur(6px); /* Sutil desenfoque de los gases de fondo */
+            backdrop-filter: blur(6px); 
             -webkit-backdrop-filter: blur(6px);
             transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
         }
@@ -255,7 +252,7 @@
 
         /* Ajustes interactivos enfocados en el hover del contenedor */
         .return-container:hover .btn-return {
-            background: rgba(255, 85, 51, 0.08); /* Suave tinte marciano al pasar el cursor */
+            background: rgba(255, 85, 51, 0.08); 
             border-color: var(--color-mars);
             color: #ffffff;
             box-shadow: 0 0 15px var(--color-mars-glow);
@@ -263,7 +260,7 @@
         }
 
         body.day-mode .return-container:hover .btn-return {
-            background: rgba(0, 82, 255, 0.08); /* Suave tinte azul en modo día */
+            background: rgba(0, 82, 255, 0.08); 
             color: var(--color-mars);
         }
 
@@ -281,13 +278,13 @@
         /* --- ETIQUETA PEQUEÑA HUD BAJO EL BOTÓN --- */
         .return-label {
             font-family: 'Montserrat', sans-serif;
-            font-size: 0.4rem;
+            font-size: 0.65rem;
             color: var(--color-text-secondary);
             letter-spacing: 2px;
             text-transform: uppercase;
             font-weight: 700;
             opacity: 0.8;
-            pointer-events: none; /* Evita bloquear interacciones */
+            pointer-events: none; 
         }
 
         .return-container:hover .return-label {
@@ -313,7 +310,6 @@
             gap: 40px;
         }
 
-        /* Adaptabilidad a dispositivos de menor tamaño */
         @media (max-width: 1000px) {
             .gallery-grid {
                 grid-template-columns: 1fr; 
@@ -364,10 +360,10 @@
             transition: all 0.3s ease;
         }
 
-        /* Iluminación de toda la tarjeta en hover de modo sutil e integrado */
+        /* MODIFICACIÓN: Iluminación de toda la tarjeta en hover de modo sutil e integrado */
         .project-card:hover {
             transform: translateY(-5px);
-            background: var(--color-card-hover); /* Sutil tinte del fondo completo */
+            background: var(--color-card-hover); 
             border-color: var(--color-mars);
             box-shadow: 0 12px 30px var(--color-mars-glow);
         }
@@ -382,7 +378,7 @@
         .video-box {
             position: relative;
             width: 100%;
-            padding-top: 56.25%; /* Relación de aspecto 16:9 */
+            padding-top: 56.25%; 
             background-color: #0b0507;
             background-size: cover;
             background-position: center;
@@ -398,7 +394,6 @@
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
 
-        /* Suave zoom out e iluminación de la miniatura al hacer hover */
         .video-box::before {
             content: '';
             position: absolute;
@@ -418,7 +413,6 @@
             filter: brightness(1.15);
         }
 
-        /* Rejilla técnica de fondo en el placeholder */
         .video-box-grid {
             position: absolute;
             top: 0;
@@ -461,22 +455,21 @@
                 opacity: 0.7;
             }
             100% {
-                transform: translateY(180px); /* Recorre el contenedor de la imagen */
+                transform: translateY(180px); 
                 opacity: 0;
             }
         }
 
-        /* Adaptabilidad del barrido a tamaños de pantalla fluidos */
         @media (max-width: 1400px) {
             @keyframes radarSweep {
                 0% { transform: translateY(0); opacity: 0; }
                 8% { opacity: 0.7; }
                 92% { opacity: 0.7; }
-                100% { transform: translateY(22vw); opacity: 0; } /* Ratio adaptado para anchos menores */
+                100% { transform: translateY(22vw); opacity: 0; } 
             }
         }
 
-        /* Ondas e iconos estéticos de la interfaz de telemetría de Marte */
+        /* Ondas e iconos estéticos del radar */
         .hud-telemetry-decor {
             position: absolute;
             width: 84%;
@@ -529,7 +522,6 @@
             50% { opacity: 0; }
         }
 
-        /* Capa superpuesta con botón Play personalizado para indicar acción */
         .video-overlay {
             position: absolute;
             top: 0;
@@ -623,7 +615,6 @@
             font-weight: 300;
         }
 
-        /* Pie de tarjeta adaptado */
         .card-footer {
             font-family: 'Montserrat', sans-serif;
             margin-top: auto;
@@ -676,7 +667,6 @@
             pointer-events: all;
         }
 
-        /* Contenedor central a Media Pantalla */
         .modal-content {
             width: 55vw;
             max-width: 1000px;
@@ -705,7 +695,6 @@
             transform: scale(1);
         }
 
-        /* Marco 16:9 interactivo del reproductor de Google Drive */
         .modal-video-wrapper {
             position: relative;
             width: 100%;
@@ -726,7 +715,6 @@
             outline: none;
         }
 
-        /* Botón de cierre superior */
         .modal-close {
             font-family: 'Montserrat', sans-serif;
             position: absolute;
@@ -781,7 +769,7 @@
             letter-spacing: 1px;
         }
 
-        /* --- FOOTER (PIE DE PÁGINA) --- */
+        /* --- FOOTER --- */
         footer {
             position: relative;
             z-index: 1;
@@ -814,21 +802,19 @@
 </head>
 <body>
 
-    <!-- Canvas de soporte para el fondo de gas dinámico -->
+    <!-- Canvas para el fondo de gas dinámico -->
     <canvas id="gas-background"></canvas>
 
     <!-- Cabina de Telemetría HUD -->
     <header>
-        <!-- Logotipo ESDA en la parte superior izquierda -->
+        <!-- Logotipo ESDA -->
         <div class="logo-container">
             <a href="https://esda.es/" target="_blank" rel="noopener noreferrer">
                 <img src="https://esda.es/wp-content/uploads/2023/03/ESDA-logo-horizontal.svg" alt="ESDA Logo" class="logo-esda" onerror="this.onerror=null; this.src='https://esda.es/images/logo.png';">
             </a>
         </div>
 
-        <!-- Botón de Conmutación de Telemetría (Día/Noche) alineado simétricamente con el logo -->
         <button class="theme-toggle" id="theme-toggle" title="Cambiar telemetría (Día/Noche)">
-            <!-- Icono de Sol / Radar Solar -->
             <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="5"/>
                 <line x1="12" y1="1" x2="12" y2="3"/>
@@ -840,7 +826,6 @@
                 <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
                 <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
             </svg>
-            <!-- Icono de Luna -->
             <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
             </svg>
@@ -854,7 +839,7 @@
         <p class="hud-description">Desde la asignatura de Medios Informáticos II, e inspirados en el concepto del DiseñaFest’26, se propone a los alumnos imaginar una escena en Marte. Con total libertad creativa, en cuanto a su visión y estética, y después de todo el desarrollo del proyecto (ADD) en Blender, diseñaron un breve teaser promocional del Festival.</p>
         <p class="hud-description">A continuación una muestra de los trabajos.</p>
         
-        <!-- Retorno al Index 3D (CORREGIDO CON ENVOLVENTE Y ETIQUETA) -->
+        <!-- Retorno al Index 3D con Envolvente y Etiqueta -->
         <a href="index.html" class="return-container" id="btn-back" title="Volver a la Nave / Landing">
             <div class="btn-return">
                 <svg class="spaceship-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -870,14 +855,14 @@
         </a>
     </header>
 
-    <!-- Contenedor de Proyectos en Dos Columnas -->
+    <!-- Contenedor de Proyectos -->
     <main>
         <div class="gallery-grid" id="gallery-container">
-            <!-- Los 22 elementos se renderizan procedimentalmente por JS -->
+            <!-- Renderizado dinámico -->
         </div>
     </main>
 
-    <!-- REPRODUCTOR MODAL AMPLIADO A MEDIA PANTALLA -->
+    <!-- REPRODUCTOR MODAL -->
     <div class="video-modal" id="video-modal">
         <div class="modal-content">
             <button class="modal-close" id="modal-close">Cerrar [X]</button>
@@ -896,9 +881,9 @@
         <p>Medios Informáticos II | José M. Cifuentes | <span>ESDA</span> Curso 2025 - 2026</p>
     </footer>
 
-    <!-- SCRIPT DE EFECTOS VISUALES Y SONOROS (WEB AUDIO API) -->
+    <!-- SCRIPT DE EFECTOS VISUALES Y SONOROS -->
     <script>
-        // --- 1. BANCO DE DATOS DE LOS 22 PROYECTOS (CON EXCLUSIÓN DE ENLACES FALLIDOS/PLACEHOLDERS) ---
+        // --- 1. BANCO DE DATOS DE LOS PROYECTOS (CON EXCLUSIÓN DE ENLACES FALLIDOS/PLACEHOLDERS) ---
         const proyectos = [
             { id: 1, student: "Alejandro Bellosta", title: "Ignea 2112", desc: "Una civilización futurista que ha logrado establecer su herencia y su hábitat en el planeta rojo. Ante la ausencia explícita de figuras humanas, la existencia de esta sociedad se manifiesta a través de su imponente y surrealista arquitectura biomórfica. La escena está dominada por un asentamiento de morfología orgánica, cuyas cúpulas translúcidas y nodos semiesféricos parecen brotar y echar raíces sobre el árido relieve marciano. Los intensos destellos carmesí que emanan desde el interior de las estructuras actúan como el propio pulso vital de ÍGNEA, rompiendo la monotonía del paisaje e indicando una actividad tecnológica y habitacional constante.", class: "2º DG", group: "Grupo B", videoId: "1J1RuIbU_aq-y4hDa5RUgA2tcRmRSu-PQ" },
             { id: 2, student: "Ana Marí­a Cojocaru", title: "Ethereal Bloom", desc: "Es un mundo abstracto y fantástico construido a partir de flores, perlas y cristales holográficos y en tonos suaves. La pieza explora una atmósfera etérea y surrealista donde la delicadeza de las formas y los materiales crea un mundo onírico y contemplativo.", class: "2º DG", group: "Grupo A", videoId: "1k7U89dEsXgN8c9S9YML7ZqiOSSSFfAIw" },
@@ -920,7 +905,7 @@
             { id: 18, student: "Pablo Marí­n", title: "Ecos de Marte", desc: "La escena representa una visión futurista de Marte convertida en un espacio de abandono tecnológico y exploración olvidada.", class: "2º DG", group: "Grupo C", videoId: "1UV5ADlhk2GDDcn-Lm_4GrhNXRO5Q4oUt" },
             { id: 19, student: "Pilar Gormedino", title: "El Marte que nadie imaginó", desc: "Un proyecto con el que he querido desafiar la estética clásica de Marte. El objetivo era  transformarlo en un oasis flotante y dinámico, a través de las diferentes plataformas suspendidas en el aire. Es una escena compuesta con elementos naturales y personajes inhumanos interactuando entre sí, de manera amigable disfrutando del Diseña Fest ' 26.", class: "2º DG", group: "Grupo C", videoId: "1b3HwF4fDfIhCR7S01v_Q-BmMCfCftKqt" },
             { id: 20, student: "Sara Gentil", title: "El viaje de la idea", desc: "Se trata de un recorrido que hace una bola 'la idea' a través de arquitecturas surrealistas sobre un lago en Marte. La bola asciende por escaleras y cruza arcos de manera fluida, simbolizando el proceso creativo hasta que aterriza y se asienta como punto de Diseña Fest. Completando la identidad.", class: "2º DG", group: "Grupo C", videoId: "1Ib6MWlcpqi7Y4KBYUEd45D94UVtMAzDk" },
-            { id: 21, student: "Sara Tejeda", title: "Información no registrada", desc: "Señal recuperada por la terminal. Composición en 3D que reconstruye un fragmento de la superficie marciana.", class: "2º DG", group: "Grupo A", videoId: "1avI7n9yMJVfL5kKQIXhJmq0i5sxP_AYS" },
+            { id: 21, student: "Sara Tejeda", title: "La llegada al planeta Rojo", desc: "En el vídeo se ilustra el momento de la llegada al Planeta Rojo o Marte, siendo una primera exploración de su entorno y extrañas características que fusionan elementos fríos con cálidos. Esta senda le conduce a la cima de una montaña rocosa, sobre la que se encuentra con la anunciación del “Diseña Fest 26", class: "2º DG", group: "Grupo A", videoId: "1avI7n9yMJVfL5kKQIXhJmq0i5sxP_AYS" }
         ];
 
         // --- 2. RENDERIZADO PROCEDIMENTAL DE LAS TARJETAS ---
@@ -929,7 +914,6 @@
         proyectos.forEach(p => {
             const card = document.createElement('section');
             card.className = 'project-card';
-            // CLAVE: Inyectamos el parámetro nativo '#t=1' al final del ID en la llamada del thumbnail de Google Drive.
             card.innerHTML = `
                 <div>
                     <div class="video-box" style="background-image: url('https://drive.google.com/thumbnail?id=${p.videoId}&sz=w600#t=1');">
@@ -956,7 +940,6 @@
 
             const videoBox = card.querySelector('.video-box');
 
-            // --- LISTENERS MEJORADOS PARA INTERACCIONES DE SONIDO SUTILES ---
             card.addEventListener('mouseenter', () => {
                 if (audioCtx && audioCtx.state === 'running') {
                     playCardHoverSound(1200); 
@@ -978,7 +961,7 @@
         });
 
 
-        // --- 3. FONDO DE GAS DE ATERRIZAJE FLUIDO Y DESTELLOS ASCENDENTES (CANVAS 2D) ---
+        // --- 3. FONDO DE GAS DE ATERRIZAJE FLUIDO Y DESTELLOS (CANVAS 2D) ---
         const canvas = document.getElementById('gas-background');
         const canvasCtx = canvas.getContext('2d');
 
@@ -1032,15 +1015,14 @@
             const isDayMode = document.body.classList.contains('day-mode');
             
             if (isDayMode) {
-                canvasCtx.fillStyle = '#f8fafc'; // Fondo Slate-50 en modo diurno para evitar reflejos
+                canvasCtx.fillStyle = '#f8fafc'; 
             } else {
-                canvasCtx.fillStyle = '#060204'; // Fondo oscuro original
+                canvasCtx.fillStyle = '#060204'; 
             }
             canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
 
             const baseGrad = canvasCtx.createLinearGradient(0, canvas.height, 0, 0);
             if (isDayMode) {
-                // Gradiente en azul eléctrico dinámico para el modo día
                 baseGrad.addColorStop(0, 'rgba(0, 82, 255, 0.12)');
                 baseGrad.addColorStop(0.5, 'rgba(0, 150, 255, 0.04)');
             } else {
@@ -1055,11 +1037,8 @@
                 const gc = gasClouds[i];
                 
                 const grad = canvasCtx.createRadialGradient(gc.x, gc.y, 0, gc.x, gc.y, gc.radius);
-                
-                // MULTIPLICADORES DE CONTRASTE OPTIMIZADOS PARA MÁXIMA VISIBILIDAD
                 const op = isDayMode ? gc.opacity * 2.4 : gc.opacity * 1.6; 
                 
-                // Mapeo dinámico de gas de naranja a azul eléctrico en modo día
                 let activeColor = gc.color;
                 if (isDayMode) {
                     activeColor = gc.color.includes('235') ? 'rgba(0, 82, 255, ' : 'rgba(0, 120, 255, ';
@@ -1091,10 +1070,8 @@
                 canvasCtx.beginPath();
                 canvasCtx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
                 
-                // Incrementamos la opacidad de los destellos/chispas estelares (1.2 en modo día, 1.0 en modo noche)
                 const alphaVal = isDayMode ? s.alpha * 1.2 : s.alpha;
                 
-                // Mapeo dinámico de chispas a azul eléctrico y cyan en modo diurno
                 let activeColor = s.color;
                 if (isDayMode) {
                     activeColor = s.color.includes('85') ? 'rgba(0, 82, 255, ' : 'rgba(0, 190, 255, ';
@@ -1150,7 +1127,6 @@
             modalTitle.innerText = title;
             modalStudent.innerText = student;
             
-            // Calidad Full HD Forzada mediante vq=hd1080
             modalIframe.src = `https://drive.google.com/file/d/${videoId}/preview?vq=hd1080&hd=1&t=1s`;
             
             modal.classList.add('active');
@@ -1285,9 +1261,8 @@
             }
         });
 
-        // --- CLAVE: SOLUCIÓN COMPATIBILIDAD CON CACHÉ DE SALIDA (Para evitar transiciones residuales) ---
+        // --- CLAVE: SOLUCIÓN COMPATIBILIDAD CON CACHÉ DE SALIDA ---
         window.addEventListener('pagehide', () => {
-            // Limpia cualquier estado al salir
             closeWarpModal();
         });
     </script>
